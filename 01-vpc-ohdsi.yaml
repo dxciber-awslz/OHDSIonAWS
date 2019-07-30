@@ -10,6 +10,34 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: This CloudFormation Template creates the VPC, subnets, routing, NAT Gateways, security groups and IAM Roles to support OHDSI.
 
 Parameters:
+  CreateVpc:
+    Type: String
+    AllowedValues:
+      - true
+      - false
+    Default: true
+    Description: If true the VPC network is not created and the VPC and subnet IDs are provided to the master template as parameters
+  VPCId:
+    Type: AWS::EC2::VPC::Id
+    Description: Provide if CreateVpc is set to false
+  SubnetPublicA:
+    Type: AWS::EC2::Subnet::Id
+    Description: Provide if CreateVpc is set to false
+  SubnetPublicB:
+    Type: AWS::EC2::Subnet::Id
+    Description: Provide if CreateVpc is set to false
+  SubnetAppA:
+    Type: AWS::EC2::Subnet::Id
+    Description: Provide if CreateVpc is set to false
+  SubnetAppB:
+    Type: AWS::EC2::Subnet::Id
+    Description: Provide if CreateVpc is set to false
+  SubnetDataA:
+    Type: AWS::EC2::Subnet::Id
+    Description: Provide if CreateVpc is set to false
+  SubnetDataB:
+    Type: AWS::EC2::Subnet::Id
+    Description: Provide if CreateVpc is set to false
   AccessCidr:
     AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
     Description: The CIDR IP range that is permitted to SSH to bastion instance. Note - a value of 0.0.0.0/0 will allow access from ANY IP address.
@@ -79,7 +107,9 @@ Parameters:
 
 
 
-Conditions:    
+Conditions:
+  CreateVpc:
+    !Equals [ true, !Ref CreateVpc ]    
   DeployRoute53: 
     !Equals [ true, !Ref UseRoute53Boolean ]
   DeployACM: !And 
@@ -92,6 +122,7 @@ Conditions:
 Resources:
   vpc27bc775f:
     Type: AWS::EC2::VPC
+    DependsOn: CreateVpc
     Properties:
       CidrBlock: !Ref VPCcidr
       InstanceTenancy: default
@@ -105,12 +136,14 @@ Resources:
 #Defines Internet Connectivity
   igw8d9149f4:
     Type: AWS::EC2::InternetGateway
+    DependsOn: CreateVpc
     Properties:
       Tags:
         - Key: Name
           Value: PHP IGW
   gw1:
     Type: AWS::EC2::VPCGatewayAttachment
+    DependsOn: CreateVpc
     Properties:
       VpcId: !Ref 'vpc27bc775f'
       InternetGatewayId: !Ref 'igw8d9149f4'
@@ -135,6 +168,7 @@ Resources:
   #Defines two availability zones of subnets for the three tier network architecture
   subnet3d504d67:
     Type: AWS::EC2::Subnet
+    DependsOn: CreateVpc
     Properties:
       CidrBlock: !Ref d2cidr
       AvailabilityZone: !Join [ "", [ !Ref 'AWS::Region', "b" ] ]
@@ -144,6 +178,7 @@ Resources:
           Value: Data B
   subnet864d50dc:
     Type: AWS::EC2::Subnet
+    DependsOn: CreateVpc
     Properties:
       CidrBlock: !Ref a2cidr
       AvailabilityZone: !Join [ "", [ !Ref 'AWS::Region', "b" ] ]
@@ -153,6 +188,7 @@ Resources:
           Value: App B
   subnet7aee3531:
     Type: AWS::EC2::Subnet
+    DependsOn: CreateVpc
     Properties:
       CidrBlock: !Ref d1cidr
       AvailabilityZone: !Join [ "", [ !Ref 'AWS::Region', "a" ] ]
@@ -162,6 +198,7 @@ Resources:
           Value: Data A
   subnetbae43ff1:
     Type: AWS::EC2::Subnet
+    DependsOn: CreateVpc
     Properties:
       CidrBlock: !Ref a1cidr
       AvailabilityZone: !Join [ "", [ !Ref 'AWS::Region', "a" ] ]
@@ -171,6 +208,7 @@ Resources:
           Value: App A
   subnetd3e13a98:
     Type: AWS::EC2::Subnet
+    DependsOn: CreateVpc
     Properties:
       CidrBlock: !Ref p1cidr
       AvailabilityZone: !Join [ "", [ !Ref 'AWS::Region', "a" ] ]
@@ -181,6 +219,7 @@ Resources:
           Value: Public A
   subnet2c5c4176:
     Type: AWS::EC2::Subnet
+    DependsOn: CreateVpc
     Properties:
       CidrBlock: !Ref p2cidr
       AvailabilityZone: !Join [ "", [ !Ref 'AWS::Region', "b" ] ]
@@ -663,17 +702,29 @@ Outputs:
   VPCId:
     Value: !Ref 'vpc27bc775f'
   SubnetPublicA:
-    Value: !Ref 'subnetd3e13a98'
+    Value: !If CreateVpc
+      - !Ref 'subnetd3e13a98'
+      - !Ref 'SubnetPublicA'
   SubnetPublicB:
-    Value: !Ref 'subnet2c5c4176'
+    Value: !if CreateVpc 
+      - !Ref 'subnet2c5c4176'
+      - !Ref 'SubnetPublicB'
   SubnetAppA:
-    Value: !Ref 'subnetbae43ff1'
-  SubnetAppB:
-    Value: !Ref 'subnet864d50dc'
+    Value: !if CreateVpc
+      - !Ref 'subnetbae43ff1'
+      - !Ref 'SubnetAppA'
+  SubnetAppB: 
+    Value: !if CreateVpc
+      - !Ref 'subnet864d50dc'
+      - !Ref 'SubnetAppB'
   SubnetDataA:
-    Value: !Ref 'subnet7aee3531'
+    Value: !If CreateVpc
+      - !Ref 'subnet7aee3531'
+      - !Ref 'SubnetDataA'
   SubnetDataB:
-    Value: !Ref 'subnet3d504d67'
+    Value: !If CreateVpc
+      - !Ref 'subnet3d504d67'
+      - !Ref 'SubnetDataB'
   SGPublic:
     Value: !If [ DeployACM, !Ref 'PublicSGSSL', !Ref 'PublicSGNoSSL' ]
   SGApp:

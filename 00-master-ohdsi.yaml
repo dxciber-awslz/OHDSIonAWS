@@ -650,7 +650,7 @@ Resources:
         R53HostedZoneId: !Ref 'HostedZoneId'
         R53DomainName: !Join ['', [!Ref DomainName, '.', !Ref HostedZoneName]]
         SubjectAlternativeNames: !Join ['', ['rstudio.', !Ref DomainName, '.', !Ref HostedZoneName]]
-       TemplateURL: !Join 
+      TemplateURL: !Join 
         - ""
         - - "https://s3.amazonaws.com/"
           - !Ref S3TemplatesBucket
@@ -661,7 +661,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DependsOn: VPCStack
     Properties:
-       TemplateURL: !Join 
+      TemplateURL: !Join 
         - ""
         - - "https://s3.amazonaws.com/"
           - !Ref S3TemplatesBucket
@@ -691,7 +691,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DependsOn: DatabasesStack
     Properties:
-       TemplateURL: !Join 
+      TemplateURL: !Join 
         - ""
         - - "https://s3.amazonaws.com/"
           - !Ref S3TemplatesBucket
@@ -806,7 +806,7 @@ Resources:
         PrivateDeployment: 'false'
         AtlasSecurity: !Ref AtlasSecurity
         UserList: !Ref 'RStudioUserList'
-       TemplateURL: !Join 
+      TemplateURL: !Join 
         - ""
         - - "https://s3.amazonaws.com/"
           - !Ref S3TemplatesBucket
@@ -826,7 +826,7 @@ Resources:
           !Ref HostedZoneName
         DomainName:
           !Ref DomainName
-       TemplateURL: !Join 
+      TemplateURL: !Join 
         - ""
         - - "https://s3.amazonaws.com/"
           - !Ref S3TemplatesBucket
@@ -834,6 +834,9 @@ Resources:
           - 03-route53-ohdsi.yaml
 
 Outputs:
+  DatabasePasswordSecret:
+    Description: Secret in AWS SecretsManager containing the Postgres and RedShift databases master password
+    Value: OHDSI/DatabaseMasterPassword
   AtlasURL:
     Value: !If [DeployRoute53, !If [DeployACM, !Join ['', ['https://', !Ref DomainName, '.', !Ref HostedZoneName, '/']], !Join ['', ['http://', !Ref DomainName, '.', !Ref HostedZoneName, '/']]], !Join ['', ['http://', !Ref EBEndpoint, '.', !Ref 'AWS::Region', '.elasticbeanstalk.com']]]
   RStudioURL:

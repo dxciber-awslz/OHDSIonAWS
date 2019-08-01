@@ -5,6 +5,14 @@
 #    http://aws.amazon.com/apache2.0/
 # or in the "license" file accompanying this file. This file is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, 
 # either express or implied. See the License for the specific language governing permissions and limitations under the License.
+#
+# Updates by DXC Technology (2019)
+#
+# author: Juan Alvarez Ferrando (jalvarezferr@dxc.com)
+# changes:
+#   - Templates location made selectable to be able to use customized templates
+#   - Database master password generated and stored in SecretsManager instead of requested as parameter
+#   - VPC creation optional (VPC and Subnets IDs requested as parameters)
 
 AWSTemplateFormatVersion: 2010-09-09
 

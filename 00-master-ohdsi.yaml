@@ -35,7 +35,7 @@ Metadata:
         - DatabaseInstanceType
         - RedshiftInstanceType
         - NumRedshiftNodes
-        - DatabaseMasterPassword
+#        - DatabaseMasterPassword
         - Sources
         - SourcesBucket
     - Label:
@@ -111,8 +111,8 @@ Metadata:
         default: Instance Type for Redshift cluster nodes
       NumRedshiftNodes:
         default: Number of nodes in your Redshift cluster
-      DatabaseMasterPassword:
-        default: 'Aurora Postgres and Redshift master password'
+#      DatabaseMasterPassword:
+#        default: 'Aurora Postgres and Redshift master password'
       Sources:
         default: Comma-delimited list of OMOP CDM schema sources to load into the Redshift datawarehouse.  The first source in the list will have its Vocabulary and Results schema priorty set to 1 for WebAPI.
       SourcesBucket:
@@ -270,14 +270,14 @@ Parameters:
     Default: 1
     Description: "[ Required ] Specifies the  number of nodes in your Redshift cluster."
     Type: String
-  DatabaseMasterPassword:
-    AllowedPattern: ^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.{8,41}$)[a-zA-Z\d~#%^*_+,-]*$
-    ConstraintDescription: Must have a length of 8-41 and be letters (upper and lower), numbers, and/or these special characters ~#%^*_+,-
-    Description: '[ Required ] This password will be used for the master user of the Aurora PostgreSQL WebAPI database and the Redshift OMOP CDM data warehouse.  It must have a length of 8-41 and have at least 1 uppercase, 1 lowercase, 1 number, and optionally include these special characters ~#%^*_+,-.'
-    MaxLength: 41
-    MinLength: 8
-    NoEcho: true
-    Type: String
+#  DatabaseMasterPassword:
+#    AllowedPattern: ^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.{8,41}$)[a-zA-Z\d~#%^*_+,-]*$
+#    ConstraintDescription: Must have a length of 8-41 and be letters (upper and lower), numbers, and/or these special characters ~#%^*_+,-
+#    Description: '[ Required ] This password will be used for the master user of the Aurora PostgreSQL WebAPI database and the Redshift OMOP CDM data warehouse.  It must have a length of 8-41 and have at least 1 uppercase, 1 lowercase, 1 number, and optionally include these special characters ~#%^*_+,-.'
+#    MaxLength: 41
+#    MinLength: 8
+#    NoEcho: true
+#    Type: String
   Sources:
     Description: Comma-delimited list of OMOP CDM schema sources to load into the Redshift datawarehouse
     Type: String
@@ -555,13 +555,27 @@ Conditions:
     - !Condition DeployRoute53
 
 Resources:
+  DBPasswordSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: Postgres and Redshift databases master password
+      Name: OHDSI/DatabaseMasterPassword
+      GenerateSecretString: 
+        ExcludeCharacters: '"@/\'
+        ExcludeLowerCase: false
+        ExcludeNumbers: false
+        ExcludePunctuation: false
+        ExcludeUpperCase: false
+        IncludeSpace: false
+        PasswordLength: 30
+
   VPCStack:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: https://s3.amazonaws.com/ohdsi-rstudio/01-vpc-ohdsi.yaml
       Parameters:
         CreateVpc: !Ref CreateVpc
-        VpcId: !ImportValue LZ-VPC-USE2-10-161-0-0-L-OHDSI-VPCID
+        VpcId: !Ref VPCId
         SubnetPublicA: !Ref SubnetPublicA
         SubnetPublicB: !Ref SubnetPublicB
         SubnetAppA: !Ref SubnetAppA
@@ -598,7 +612,7 @@ Resources:
       TemplateURL: https://s3.amazonaws.com/ohdsi-rstudio/02-databases-ohdsi.yaml
       Parameters:
         DatabaseMasterPassword:
-          !Ref DatabaseMasterPassword
+          '{{resolve:secretsmanager:OHDSI/DatabaseMasterPassword}}'
         DatabaseInstanceType:
           !Ref DatabaseInstanceType
         RedshiftInstanceType: 
@@ -608,9 +622,9 @@ Resources:
         MultiAZDatabase:
           !Ref MultiAZDatabase
         SubnetDataA:
-#          !GetAtt 'VPCStack.Outputs.SubnetDataA'
+          !GetAtt 'VPCStack.Outputs.SubnetDataA'
         SubnetDataB:
-#          !GetAtt 'VPCStack.Outputs.SubnetDataB'
+          !GetAtt 'VPCStack.Outputs.SubnetDataB'
         SGData:
           !GetAtt 'VPCStack.Outputs.SGData'
         RSRoleArn: 
@@ -648,7 +662,7 @@ Resources:
         RDSEndpoint: !GetAtt 'DatabasesStack.Outputs.RDSEndpoint'
         RedshiftEndpoint: !GetAtt 'DatabasesStack.Outputs.RedshiftEndpoint'
         Sources: !Ref Sources
-        DatabaseMasterPassword: !Ref DatabaseMasterPassword
+        DatabaseMasterPassword: '{{resolve:secretsmanager:OHDSI/DatabaseMasterPassword}}'
         EBEndpoint: !Ref EBEndpoint
 
   ohdsielasticbeanstalk:
@@ -658,7 +672,7 @@ Resources:
       Parameters:
         EBBucket: !Join [ "", [ !Ref "AWS::AccountId", '-', !Select [ 1, !Split [ '-', !GetAtt 'VPCStack.Outputs.SubnetPublicA'] ], '-atlas' ] ]
         DatabaseMasterPassword:
-          !Ref DatabaseMasterPassword
+          '{{resolve:secretsmanager:OHDSI/DatabaseMasterPassword}}'
         Sources:
           !Ref Sources
         SourcesBucket:

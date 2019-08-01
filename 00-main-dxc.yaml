@@ -56,8 +56,23 @@ Conditions:
     - Public
 
 Resources:
+  DBPasswordSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: Postgres and Redshift databases master password
+      Name: OHDSI/DatabaseMasterPassword
+      GenerateSecretString: 
+        ExcludeCharacters: '"@/\'
+        ExcludeLowerCase: false
+        ExcludeNumbers: false
+        ExcludePunctuation: false
+        ExcludeUpperCase: false
+        IncludeSpace: false
+        PasswordLength: 30
+
   MainStack:
     Type: AWS::CloudFormation::Stack
+    DependsOn: DBPasswordSecret
     Properties:
       TemplateURL: !Join 
         - ""
@@ -82,6 +97,7 @@ Resources:
         MultiAZDatabase: false
         DatabaseInstanceType: db.t3.medium
         RedshiftInstanceType: dc2.large
+        DatabaseMasterPassword: '{{resolve:secretsmanager:OHDSI/DatabaseMasterPassword}}'
         NumRedshiftNodes: 1
         Sources: CMSDESynPUF100k,CMSDESynPUF1k,synthea100k,synthea1k
         SourcesBucket: !ImportValue OHDSI-POC-OmopData-BucketName

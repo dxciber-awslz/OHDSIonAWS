@@ -48,7 +48,7 @@ Metadata:
         - DatabaseInstanceType
         - RedshiftInstanceType
         - NumRedshiftNodes
-#        - DatabaseMasterPassword
+        - DatabaseMasterPassword
         - Sources
         - SourcesBucket
     - Label:
@@ -136,8 +136,8 @@ Metadata:
         default: Instance Type for Redshift cluster nodes
       NumRedshiftNodes:
         default: Number of nodes in your Redshift cluster
-#      DatabaseMasterPassword:
-#        default: 'Aurora Postgres and Redshift master password'
+      DatabaseMasterPassword:
+        default: 'Aurora Postgres and Redshift master password'
       Sources:
         default: Comma-delimited list of OMOP CDM schema sources to load into the Redshift datawarehouse.  The first source in the list will have its Vocabulary and Results schema priorty set to 1 for WebAPI.
       SourcesBucket:
@@ -320,14 +320,14 @@ Parameters:
     Default: 1
     Description: "[ Required ] Specifies the  number of nodes in your Redshift cluster."
     Type: String
-#  DatabaseMasterPassword:
-#    AllowedPattern: ^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.{8,41}$)[a-zA-Z\d~#%^*_+,-]*$
-#    ConstraintDescription: Must have a length of 8-41 and be letters (upper and lower), numbers, and/or these special characters ~#%^*_+,-
-#    Description: '[ Required ] This password will be used for the master user of the Aurora PostgreSQL WebAPI database and the Redshift OMOP CDM data warehouse.  It must have a length of 8-41 and have at least 1 uppercase, 1 lowercase, 1 number, and optionally include these special characters ~#%^*_+,-.'
-#    MaxLength: 41
-#    MinLength: 8
-#    NoEcho: true
-#    Type: String
+  DatabaseMasterPassword:
+    AllowedPattern: ^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.{8,41}$)[a-zA-Z\d~#%^*_+,-]*$
+    ConstraintDescription: Must have a length of 8-41 and be letters (upper and lower), numbers, and/or these special characters ~#%^*_+,-
+    Description: '[ Required ] This password will be used for the master user of the Aurora PostgreSQL WebAPI database and the Redshift OMOP CDM data warehouse.  It must have a length of 8-41 and have at least 1 uppercase, 1 lowercase, 1 number, and optionally include these special characters ~#%^*_+,-.'
+    MaxLength: 41
+    MinLength: 8
+    NoEcho: true
+    Type: String
   Sources:
     Description: Comma-delimited list of OMOP CDM schema sources to load into the Redshift datawarehouse
     Type: String
@@ -605,19 +605,6 @@ Conditions:
     - !Condition DeployRoute53
 
 Resources:
-  DBPasswordSecret:
-    Type: AWS::SecretsManager::Secret
-    Properties:
-      Description: Postgres and Redshift databases master password
-      Name: OHDSI/DatabaseMasterPassword
-      GenerateSecretString: 
-        ExcludeCharacters: '"@/\'
-        ExcludeLowerCase: false
-        ExcludeNumbers: false
-        ExcludePunctuation: false
-        ExcludeUpperCase: false
-        IncludeSpace: false
-        PasswordLength: 30
 
   VPCStack:
     Type: AWS::CloudFormation::Stack
@@ -677,7 +664,7 @@ Resources:
           - 02-databases-ohdsi.yaml
       Parameters:
         DatabaseMasterPassword:
-          '{{resolve:secretsmanager:OHDSI/DatabaseMasterPassword}}'
+          !Ref DatabaseMasterPassword
         DatabaseInstanceType:
           !Ref DatabaseInstanceType
         RedshiftInstanceType: 
@@ -732,7 +719,7 @@ Resources:
         RDSEndpoint: !GetAtt 'DatabasesStack.Outputs.RDSEndpoint'
         RedshiftEndpoint: !GetAtt 'DatabasesStack.Outputs.RedshiftEndpoint'
         Sources: !Ref Sources
-        DatabaseMasterPassword: '{{resolve:secretsmanager:OHDSI/DatabaseMasterPassword}}'
+        DatabaseMasterPassword: !Ref DatabaseMasterPassword
         EBEndpoint: !Ref EBEndpoint
 
   ohdsielasticbeanstalk:
@@ -742,7 +729,7 @@ Resources:
       Parameters:
         EBBucket: !Join [ "", [ !Ref "AWS::AccountId", '-', !Select [ 1, !Split [ '-', !GetAtt 'VPCStack.Outputs.SubnetPublicA'] ], '-atlas' ] ]
         DatabaseMasterPassword:
-          '{{resolve:secretsmanager:OHDSI/DatabaseMasterPassword}}'
+          !Ref DatabaseMasterPassword
         Sources:
           !Ref Sources
         SourcesBucket:
@@ -842,9 +829,6 @@ Resources:
           - 03-route53-ohdsi.yaml
 
 Outputs:
-  DatabasePasswordSecret:
-    Description: Secret in AWS SecretsManager containing the Postgres and RedShift databases master password
-    Value: OHDSI/DatabaseMasterPassword
   AtlasURL:
     Value: !If [DeployRoute53, !If [DeployACM, !Join ['', ['https://', !Ref DomainName, '.', !Ref HostedZoneName, '/']], !Join ['', ['http://', !Ref DomainName, '.', !Ref HostedZoneName, '/']]], !Join ['', ['http://', !Ref EBEndpoint, '.', !Ref 'AWS::Region', '.elasticbeanstalk.com']]]
   RStudioURL:

@@ -76,6 +76,13 @@ Metadata:
         default: VPC Networking (changing this is optional)
       Parameters:
         - CreateVpc
+        - VPCId
+        - SubnetPublicA
+        - SubnetPublicB
+        - SubnetAppA
+        - SubnetAppB
+        - SubnetDataA
+        - SubnetDataB
         - VPCcidr
         - p1cidr
         - p2cidr
@@ -171,7 +178,23 @@ Metadata:
       PredictionComparisonv:
         default: PredictionComparison Version
       
-      CreateVpc: Set to false to use your own VPC
+      CreateVpc:
+        default: Set to false to use your own VPC. Provide VPC and Subnet IDs instead of CIDRs
+      VPCId:
+        default: ID of the VPC, if CreateVpc is true
+      SubnetPublicA:
+        default: ID of the public subnet in AZ A. If CreateVpc is true
+      SubnetPublicB:
+        default: ID of the public subnet in AZ B. If CreateVpc is true
+      SubnetAppA:
+        default: ID of the application subnet in AZ A. If CreateVpc is true
+      SubnetAppB:
+        default: ID of the application subnet in AZ B. If CreateVpc is true
+      SubnetDataA:
+        default: ID of the database subnet in AZ A. If CreateVpc is true
+      SubnetDataB:
+        default: ID of the database subnet in AZ B. If CreateVpc is true
+        
       VPCcidr:
         default: VPC CIDR Range
       p1cidr:
@@ -580,8 +603,8 @@ Resources:
         SubnetPublicB: !Ref SubnetPublicB
         SubnetAppA: !Ref SubnetAppA
         SubnetAppB: !Ref SubnetAppB
-        SubnetDataA: !Ref SubnetDatabaseA
-        SubnetDataB: !Ref SubnetDatabaseB
+        SubnetDataA: !Ref SubnetDataA
+        SubnetDataB: !Ref SubnetDataB
         AccessCidr: !Ref 'AccessCidr'
         UseACMBoolean: !Ref 'UseACMBoolean'
         UseRoute53Boolean: !Ref 'UseRoute53Boolean'

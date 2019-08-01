@@ -15,6 +15,11 @@ Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
     - Label:
+        default: Templates S3 Location
+      Parameters:
+        - S3TemplatesBucket
+        - S3TemplatesPrefix
+    - Label:
         default: General AWS
       Parameters:
         - EC2KeyName
@@ -92,6 +97,11 @@ Metadata:
         - d2cidr
     
     ParameterLabels:
+      S3TemplatesBucket:
+        default: Bucket Where S3 CFN Templates are stored
+      S3TemplatesPrefix:
+        default: Prefix of the templates location in the bucket. Use / if none
+    
       EC2KeyName:
         default: EC2 Key Pair
       AccessCidr:
@@ -211,8 +221,17 @@ Metadata:
         default: Database Subnet B CIDR Range
 
 
-
 Parameters:
+  S3TemplatesBucket:
+    Type: String
+    Description: '[ REQUIRED ] Name of the bucket where the CFN templates are stored'
+    default: ohdsi-rstudio
+    AllowedPattern: (?=^.{3,63}$)(?!^(\d+\.)+\d+$)(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)
+  S3TemplatesPrefix:
+    Type: String
+    Description: '[ REQUIRED ] Path in the bucket where the CFN templates are stored'
+    default: /
+    
   EC2KeyName:
     ConstraintDescription: Must be letters (upper or lower), numbers, and special characters.
     Description: '[ REQUIRED ] Name of an EC2 KeyPair. Your bastion & Web instances will launch with this KeyPair. To create a KeyPair, see https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html#having-ec2-create-your-key-pair'
@@ -595,7 +614,12 @@ Resources:
   VPCStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://s3.amazonaws.com/ohdsi-rstudio/01-vpc-ohdsi.yaml
+      TemplateURL: !Join 
+        - ""
+        - - "https://s3.amazonaws.com/"
+          - !Ref S3TemplatesBucket
+          - !Ref S3TemplatesPrefix 
+          - "01-vpc-ohdsi.yaml"
       Parameters:
         CreateVpc: !Ref CreateVpc
         VpcId: !Ref VPCId
@@ -626,13 +650,23 @@ Resources:
         R53HostedZoneId: !Ref 'HostedZoneId'
         R53DomainName: !Join ['', [!Ref DomainName, '.', !Ref HostedZoneName]]
         SubjectAlternativeNames: !Join ['', ['rstudio.', !Ref DomainName, '.', !Ref HostedZoneName]]
-      TemplateURL: https://s3.amazonaws.com/ohdsi-rstudio/01-certificate-ohdsi.yaml
+       TemplateURL: !Join 
+        - ""
+        - - "https://s3.amazonaws.com/"
+          - !Ref S3TemplatesBucket
+          - !Ref S3TemplatesPrefix
+          - 01-certificate-ohdsi.yaml
 
   DatabasesStack:
     Type: AWS::CloudFormation::Stack
     DependsOn: VPCStack
     Properties:
-      TemplateURL: https://s3.amazonaws.com/ohdsi-rstudio/02-databases-ohdsi.yaml
+       TemplateURL: !Join 
+        - ""
+        - - "https://s3.amazonaws.com/"
+          - !Ref S3TemplatesBucket
+          - !Ref S3TemplatesPrefix
+          - 02-databases-ohdsi.yaml
       Parameters:
         DatabaseMasterPassword:
           '{{resolve:secretsmanager:OHDSI/DatabaseMasterPassword}}'
@@ -657,7 +691,12 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DependsOn: DatabasesStack
     Properties:
-      TemplateURL: https://s3.amazonaws.com/ohdsi-rstudio/02-rstudio-ohdsi.yaml
+       TemplateURL: !Join 
+        - ""
+        - - "https://s3.amazonaws.com/"
+          - !Ref S3TemplatesBucket
+          - !Ref S3TemplatesPrefix
+          - 02-rstudio-ohdsi.yaml
       Parameters:
         RStudioInstanceProfile: !GetAtt 'VPCStack.Outputs.RStudioInstanceProfile'
         SageMakerBucket: !Ref SageMakerBucket
@@ -767,7 +806,12 @@ Resources:
         PrivateDeployment: 'false'
         AtlasSecurity: !Ref AtlasSecurity
         UserList: !Ref 'RStudioUserList'
-      TemplateURL: https://s3.amazonaws.com/ohdsi-rstudio/03-application-ohdsi.yaml
+       TemplateURL: !Join 
+        - ""
+        - - "https://s3.amazonaws.com/"
+          - !Ref S3TemplatesBucket
+          - !Ref S3TemplatesPrefix
+          - 03-application-ohdsi.yaml
   route53:
     Condition: DeployRoute53
     DependsOn: ohdsielasticbeanstalk
@@ -782,7 +826,12 @@ Resources:
           !Ref HostedZoneName
         DomainName:
           !Ref DomainName
-      TemplateURL: https://s3.amazonaws.com/ohdsi-rstudio/03-route53-ohdsi.yaml
+       TemplateURL: !Join 
+        - ""
+        - - "https://s3.amazonaws.com/"
+          - !Ref S3TemplatesBucket
+          - !Ref S3TemplatesPrefix
+          - 03-route53-ohdsi.yaml
 
 Outputs:
   AtlasURL:

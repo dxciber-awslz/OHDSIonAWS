@@ -109,10 +109,6 @@ Parameters:
     Type: String
     Default: 10.1.5.0/24
 
-
-
-
-
 Conditions:
   CreateVpc:
     !Equals [ true, !Ref CreateVpc ]    
@@ -128,7 +124,7 @@ Conditions:
 Resources:
   vpc27bc775f:
     Type: AWS::EC2::VPC
-    DependsOn: CreateVpc
+    Condition: CreateVpc
     Properties:
       CidrBlock: !Ref VPCcidr
       InstanceTenancy: default
@@ -142,14 +138,14 @@ Resources:
 #Defines Internet Connectivity
   igw8d9149f4:
     Type: AWS::EC2::InternetGateway
-    DependsOn: CreateVpc
+    Condition: CreateVpc
     Properties:
       Tags:
         - Key: Name
           Value: PHP IGW
   gw1:
     Type: AWS::EC2::VPCGatewayAttachment
-    DependsOn: CreateVpc
+    Condition: CreateVpc
     Properties:
       VpcId: !Ref 'vpc27bc775f'
       InternetGatewayId: !Ref 'igw8d9149f4'
@@ -159,6 +155,7 @@ Resources:
 #Defines NAT Gateway so that the Elastic Beanstalk servers and the temporary EC2 server can talk to the Internet
   NAT:
     DependsOn: gw1
+    Condition: CreateVpc
     Type: AWS::EC2::NatGateway
     Properties:
       AllocationId: !GetAtt 'EIP.AllocationId'
@@ -174,7 +171,7 @@ Resources:
   #Defines two availability zones of subnets for the three tier network architecture
   subnet3d504d67:
     Type: AWS::EC2::Subnet
-    DependsOn: CreateVpc
+    Condition: CreateVpc
     Properties:
       CidrBlock: !Ref d2cidr
       AvailabilityZone: !Join [ "", [ !Ref 'AWS::Region', "b" ] ]
@@ -184,7 +181,7 @@ Resources:
           Value: Data B
   subnet864d50dc:
     Type: AWS::EC2::Subnet
-    DependsOn: CreateVpc
+    Condition: CreateVpc
     Properties:
       CidrBlock: !Ref a2cidr
       AvailabilityZone: !Join [ "", [ !Ref 'AWS::Region', "b" ] ]
@@ -194,7 +191,7 @@ Resources:
           Value: App B
   subnet7aee3531:
     Type: AWS::EC2::Subnet
-    DependsOn: CreateVpc
+    Condition: CreateVpc
     Properties:
       CidrBlock: !Ref d1cidr
       AvailabilityZone: !Join [ "", [ !Ref 'AWS::Region', "a" ] ]
@@ -204,7 +201,7 @@ Resources:
           Value: Data A
   subnetbae43ff1:
     Type: AWS::EC2::Subnet
-    DependsOn: CreateVpc
+    Condition: CreateVpc
     Properties:
       CidrBlock: !Ref a1cidr
       AvailabilityZone: !Join [ "", [ !Ref 'AWS::Region', "a" ] ]
@@ -214,7 +211,7 @@ Resources:
           Value: App A
   subnetd3e13a98:
     Type: AWS::EC2::Subnet
-    DependsOn: CreateVpc
+    Condition: CreateVpc
     Properties:
       CidrBlock: !Ref p1cidr
       AvailabilityZone: !Join [ "", [ !Ref 'AWS::Region', "a" ] ]
@@ -225,7 +222,7 @@ Resources:
           Value: Public A
   subnet2c5c4176:
     Type: AWS::EC2::Subnet
-    DependsOn: CreateVpc
+    Condition: CreateVpc
     Properties:
       CidrBlock: !Ref p2cidr
       AvailabilityZone: !Join [ "", [ !Ref 'AWS::Region', "b" ] ]
@@ -234,8 +231,6 @@ Resources:
       Tags:
         - Key: Name
           Value: Public B
-  
-
 
 #Security Groups for the three tiered network architecture
   PublicSGSSL:
@@ -244,7 +239,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Security Group for Load Balancers
-      VpcId: !Ref 'vpc27bc775f'
+      VpcId: !If [ CreateVpc, !Ref 'vpc27bc775f', !Ref VPCId ]
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: '443'
@@ -263,7 +258,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Security Group for Load Balancers
-      VpcId: !Ref 'vpc27bc775f'
+      VpcId: !If [ CreateVpc, !Ref 'vpc27bc775f', !Ref VPCId ]
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: '443'
@@ -289,7 +284,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Security Group for Application Servers
-      VpcId: !Ref 'vpc27bc775f'
+      VpcId: !If [ CreateVpc, !Ref 'vpc27bc775f', !Ref VPCId ]
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: '80'
@@ -307,7 +302,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Security Group for Application Servers
-      VpcId: !Ref 'vpc27bc775f'
+      VpcId: !If [ CreateVpc, !Ref 'vpc27bc775f', !Ref VPCId ]
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: '80'
@@ -325,7 +320,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Security Group for Databases
-      VpcId: !Ref 'vpc27bc775f'
+      VpcId: !If [ CreateVpc, !Ref 'vpc27bc775f', !Ref VPCId ]
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: '5432'
@@ -339,7 +334,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Security Group for Databases
-      VpcId: !Ref 'vpc27bc775f'
+      VpcId: !If [ CreateVpc, !Ref 'vpc27bc775f', !Ref VPCId ]
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: '5432'
@@ -354,16 +349,19 @@ Resources:
 #Route tables and route definitions for the three tiered network architecture
   Route:
     Type: AWS::EC2::Route
+    Condition: CreateVpc
     Properties:
       RouteTableId: !Ref 'rtb425bda38'
       DestinationCidrBlock: 0.0.0.0/0
       NatGatewayId: !Ref 'NAT'
   rtb425bda38:
     Type: AWS::EC2::RouteTable
+    Condition: CreateVpc
     Properties:
       VpcId: !Ref 'vpc27bc775f'
   rtb3756d74d:
     Type: AWS::EC2::RouteTable
+    Condition: CreateVpc
     Properties:
       VpcId: !Ref 'vpc27bc775f'
       Tags:
@@ -371,36 +369,43 @@ Resources:
           Value: Public  
   subnetroute1:
     Type: AWS::EC2::SubnetRouteTableAssociation
+    Condition: CreateVpc
     Properties:
       RouteTableId: !Ref 'rtb3756d74d'
       SubnetId: !Ref 'subnet2c5c4176'
   subnetroute2:
     Type: AWS::EC2::SubnetRouteTableAssociation
+    Condition: CreateVpc
     Properties:
       RouteTableId: !Ref 'rtb3756d74d'
       SubnetId: !Ref 'subnetd3e13a98'
   subnetroute3:
     Type: AWS::EC2::SubnetRouteTableAssociation
+    Condition: CreateVpc
     Properties:
       RouteTableId: !Ref 'rtb425bda38'
       SubnetId: !Ref 'subnet3d504d67'
   subnetroute4:
     Type: AWS::EC2::SubnetRouteTableAssociation
+    Condition: CreateVpc
     Properties:
       RouteTableId: !Ref 'rtb425bda38'
       SubnetId: !Ref 'subnet864d50dc'
   subnetroute5:
     Type: AWS::EC2::SubnetRouteTableAssociation
+    Condition: CreateVpc
     Properties:
       RouteTableId: !Ref 'rtb425bda38'
       SubnetId: !Ref 'subnet7aee3531'
   subnetroute6:
     Type: AWS::EC2::SubnetRouteTableAssociation
+    Condition: CreateVpc
     Properties:
       RouteTableId: !Ref 'rtb425bda38'
       SubnetId: !Ref 'subnetbae43ff1'
   route2:
     Type: AWS::EC2::Route
+    Condition: CreateVpc
     Properties:
       DestinationCidrBlock: 0.0.0.0/0
       RouteTableId: !Ref 'rtb3756d74d'
@@ -506,8 +511,8 @@ Resources:
                       - ':s3:::elasticbeanstalk-*-'
                       - !Ref 'AWS::AccountId'
                       - '-*/*'
-                  - !Join [ "", [ 'arn:aws:s3:::', !Ref "AWS::AccountId", '-', !Select [ 1, !Split [ '-', !Ref 'subnetd3e13a98'] ], '-redcapebapp' ] ]
-                  - !Join [ "", [ 'arn:aws:s3:::', !Ref "AWS::AccountId", '-', !Select [ 1, !Split [ '-', !Ref 'subnetd3e13a98'] ], '-redcapebapp', '/*' ] ]
+                  - !Join [ "", [ 'arn:aws:s3:::', !Ref "AWS::AccountId", '-', !Select [ 1, !Split [ '-', !If [ CreateVpc, !Ref 'subnetd3e13a98', !Ref SubnetPublicA ] ] ], '-redcapebapp' ] ]
+                  - !Join [ "", [ 'arn:aws:s3:::', !Ref "AWS::AccountId", '-', !Select [ 1, !Split [ '-', !If [ CreateVpc, !Ref 'subnetd3e13a98', !Ref SubnetPublicA ]] ], '-redcapebapp', '/*' ] ]
               - Sid: MetricsAccess
                 Action:
                   - 'cloudwatch:PutMetricData'
@@ -612,8 +617,8 @@ Resources:
               - "s3:CreateBucket"
               - "s3:ListBucket"
             Resource:    
-              - !Join [ "", [ 'arn:aws:s3:::', !Ref "AWS::AccountId", '-', !Select [ 1, !Split [ '-', !Ref 'subnetd3e13a98'] ], '-atlas' ] ]
-              - !Join [ "", [ 'arn:aws:s3:::', !Ref "AWS::AccountId", '-', !Select [ 1, !Split [ '-', !Ref 'subnetd3e13a98'] ], '-atlas', '/*' ] ]
+              - !Join [ "", [ 'arn:aws:s3:::', !Ref "AWS::AccountId", '-', !Select [ 1, !Split [ '-', !If [ CreateVpc, !Ref 'subnetd3e13a98', !Ref SubnetPublicA ] ] ], '-atlas' ] ]
+              - !Join [ "", [ 'arn:aws:s3:::', !Ref "AWS::AccountId", '-', !Select [ 1, !Split [ '-', !If [ CreateVpc, !Ref 'subnetd3e13a98', !Ref SubnetPublicA ] ] ], '-atlas', '/*' ] ]
               - !Join [ "", [ 'arn:aws:s3:::', !Ref SourcesBucket ] ]
               - !Join [ "", [ 'arn:aws:s3:::', !Ref SourcesBucket, '/*' ] ]        
           - Effect: Allow
@@ -679,14 +684,14 @@ Resources:
               - "s3:PutObject"
               - "s3:CreateBucket"
             Resource:    
-              - !Join [ "", [ 'arn:aws:s3:::', !Ref "AWS::AccountId", '-', !Select [ 1, !Split [ '-', !Ref 'subnetd3e13a98'] ], '-atlas' ] ]
-              - !Join [ "", [ 'arn:aws:s3:::', !Ref "AWS::AccountId", '-', !Select [ 1, !Split [ '-', !Ref 'subnetd3e13a98'] ], '-atlas', '/*' ] ]
+              - !Join [ "", [ 'arn:aws:s3:::', !Ref "AWS::AccountId", '-', !Select [ 1, !Split [ '-', !If [ CreateVpc, !Ref 'subnetd3e13a98', !Ref SubnetPublicA ]] ], '-atlas' ] ]
+              - !Join [ "", [ 'arn:aws:s3:::', !Ref "AWS::AccountId", '-', !Select [ 1, !Split [ '-', !If [ CreateVpc, !Ref 'subnetd3e13a98', !Ref SubnetPublicA ]] ], '-atlas', '/*' ] ]
               - !Join [ "", [ 'arn:aws:s3:::', !Ref SourcesBucket ] ]
               - !Join [ "", [ 'arn:aws:s3:::', !Ref SourcesBucket, '/*' ] ]    
               - !Join [ "", [ 'arn:aws:s3:::', !Ref SageMakerBucket ] ]    
               - !Join [ "", [ 'arn:aws:s3:::', !Ref SageMakerBucket, '/*' ] ]
-              - !Join [ "", [ 'arn:aws:s3:::', !Ref "AWS::AccountId", '-', !Select [ 1, !Split [ '-', !Ref 'subnetbae43ff1'] ], '-sagemakerplp' ] ]
-              - !Join [ "", [ 'arn:aws:s3:::', !Ref "AWS::AccountId", '-', !Select [ 1, !Split [ '-', !Ref 'subnetbae43ff1'] ], '-sagemakerplp/*' ] ]
+              - !Join [ "", [ 'arn:aws:s3:::', !Ref "AWS::AccountId", '-', !Select [ 1, !Split [ '-', !If [ CreateVpc, !Ref 'subnetbae43ff1', !Ref SubnetAppA ] ] ], '-sagemakerplp' ] ]
+              - !Join [ "", [ 'arn:aws:s3:::', !Ref "AWS::AccountId", '-', !Select [ 1, !Split [ '-', !If [ CreateVpc, !Ref 'subnetbae43ff1', !Ref SubnetAppA ] ] ], '-sagemakerplp/*' ] ]
           - Effect: Allow
             Action: 
               - "iam:GetRole"
@@ -701,36 +706,22 @@ Resources:
       Roles:
         - !Ref 'RStudioRole'
 
-
-
 #Return the created resources to the Master template
 Outputs:
   VPCId:
-    Value: !Ref 'vpc27bc775f'
+    Value: !If [ CreateVpc, !Ref 'vpc27bc775f', !Ref 'VPCId' ]
   SubnetPublicA:
-    Value: !If CreateVpc
-      - !Ref 'subnetd3e13a98'
-      - !Ref 'SubnetPublicA'
+    Value: !If [ CreateVpc, !Ref 'subnetd3e13a98', !Ref 'SubnetPublicA' ]
   SubnetPublicB:
-    Value: !if CreateVpc 
-      - !Ref 'subnet2c5c4176'
-      - !Ref 'SubnetPublicB'
+    Value: !If [ CreateVpc, !Ref 'subnet2c5c4176', !Ref 'SubnetPublicB' ]
   SubnetAppA:
-    Value: !if CreateVpc
-      - !Ref 'subnetbae43ff1'
-      - !Ref 'SubnetAppA'
+    Value: !If [ CreateVpc, !Ref 'subnetbae43ff1', !Ref 'SubnetAppA' ]
   SubnetAppB: 
-    Value: !if CreateVpc
-      - !Ref 'subnet864d50dc'
-      - !Ref 'SubnetAppB'
+    Value: !If [ CreateVpc, !Ref 'subnet864d50dc', !Ref 'SubnetAppB' ]
   SubnetDataA:
-    Value: !If CreateVpc
-      - !Ref 'subnet7aee3531'
-      - !Ref 'SubnetDataA'
+    Value: !If [ CreateVpc, !Ref 'subnet7aee3531', !Ref 'SubnetDataA' ]
   SubnetDataB:
-    Value: !If CreateVpc
-      - !Ref 'subnet3d504d67'
-      - !Ref 'SubnetDataB'
+    Value: !If [ CreateVpc, !Ref 'subnet3d504d67', !Ref 'SubnetDataB' ]
   SGPublic:
     Value: !If [ DeployACM, !Ref 'PublicSGSSL', !Ref 'PublicSGNoSSL' ]
   SGApp:

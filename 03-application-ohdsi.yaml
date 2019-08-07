@@ -809,12 +809,15 @@ Resources:
                     # The following code, that also requires the EB applications to be responsive, consequently fails and Atlas users are not
                     # created. These setup actions do not NEED to be done using the custom DNS, changed to only use the EB asigned DNS.
                     # In a future verstion, create custom CFN resources to manage Atlas users, and remove this dependency
+                    # Another reason for error is that curl without -k, using the EB DNS name causes a SSL certificate validation error
 
                     #Wait for the WebAPI app to be deployed by Elastic Beanstalk and populate the tables in RDS Postrgres
                     #while [ `curl -I ${Protocol}${RCDomainName}.${HostedZone} 2>/dev/null | head -n 1 | cut -d$' ' -f2` -ne 200 ]
                     #do
                     #    sleep 5
                     #done
+                    
+                    yum install -y jq
 
                     export EB_ENVIRONMENT=$(echo $EB_ENDPOINT | cut -d . -f1)
                     
@@ -844,7 +847,7 @@ Resources:
                           let count+=1
                           continue
                         else
-                          curl -d "login=$username&password=$i" -X POST ${Protocol}${RCDomainName}.${HostedZone}/WebAPI/user/login/db
+                          curl -k -d "login=$username&password=$i" -X POST ${Protocol}${RCDomainName}.${HostedZone}/WebAPI/user/login/db
                           userid=`psql -d OHDSI --host=$RDS_ENDPOINT --port=5432 -U ohdsi_app_user -t -c "select id from webapi.sec_user where login = '$username';"`
                           echo $userid >> /tmp/userids.txt
                           if [ "$count" = "2" ]; then

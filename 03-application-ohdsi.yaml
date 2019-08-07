@@ -770,15 +770,30 @@ Resources:
                     #Install R dependencies if any of the specified versions differ
                     sudo Rscript /tmp/rdependencies.r
 
+                    # DXC Technology: If use of a Route53 custom domain was selected this loop fails, as the DNS records have not been
+                    # created yet because the Route53 template depends on this one. 
+                    # Moreover, the use of single brackets [] in the condition causes a syntax failure in that case as curl does not return
+                    # any value and the resulting expression is : while [ -ne 200 ]
+                    # The following code, that also requires the EB applications to be responsive, consequently fails and Atlas users are not
+                    # created. These setup actions do not NEED to be done using the custom DNS, changed to only use the EB asigned DNS.
+                    # In a future verstion, create custom CFN resources to manage Atlas users, and remove this dependency
+
                     #Wait for the WebAPI app to be deployed by Elastic Beanstalk and populate the tables in RDS Postrgres
-                    while [ `curl -I ${Protocol}${RCDomainName}.${HostedZone} 2>/dev/null | head -n 1 | cut -d$' ' -f2` -ne 200 ]
-                    do
-                        sleep 5
+                    #while [ `curl -I ${Protocol}${RCDomainName}.${HostedZone} 2>/dev/null | head -n 1 | cut -d$' ' -f2` -ne 200 ]
+                    #do
+                    #    sleep 5
+                    #done
+
+                    export EB_ENVIRONMENT=$(echo $EB_ENDPOINT | cut -d . -f1)
+                    
+                    while : ;do
+                       EB_STATUS=`aws elasticbeanstalk describe-environments --region ${AWS::Region} --environment-names $EB_ENVIRONMENT | jq -r '.Environments[] | "\(.Status)&\(.Health)"'`
+                       [[ $EB_STATUS == "Ready&Green" ]] && break
+                       sleep 5
                     done
 
                     #Connect R-Studio Instance to the load balancer
                     if [ "$RSTUDIO_TARGET_GROUP_ARN" != "none" ]; then
-                        export EB_ENVIRONMENT=$(echo $EB_ENDPOINT | cut -d . -f1)
                         export EB_LB=$(aws elasticbeanstalk describe-environment-resources --environment-name $EB_ENVIRONMENT --query EnvironmentResources.LoadBalancers --output text)
                         export EB_LB_LISTENER=$(aws elbv2 describe-listeners --load-balancer-arn $EB_LB --query 'Listeners[0].ListenerArn' --output text)
 
@@ -821,18 +836,18 @@ Resources:
                         sed -i '52s/.*/  concept_code  VARCHAR(50) NULL ,/' "$REDSHIFTDDL"
                         sed -i '62s/.*/  vocabulary_reference VARCHAR(255) NULL,/' "$REDSHIFTDDL"
                         sed -i '63s/.*/  vocabulary_version VARCHAR(255) NULL,/' "$REDSHIFTDDL"
-                        sed -i '226s/.*/  race_source_value				    VARCHAR(255) NULL,/' "$REDSHIFTDDL"
-                        sed -i '340s/.*/  procedure_source_value		  VARCHAR(255)	  NULL ,/' "$REDSHIFTDDL"
-                        sed -i '352s/.*/  drug_exposure_start_date		  DATE			    NULL,/' "$REDSHIFTDDL"
-                        sed -i '354s/.*/  drug_exposure_end_date		  DATE			    NULL,/' "$REDSHIFTDDL"
-                        sed -i '411s/.*/  condition_source_value  		    VARCHAR(255)  	NULL,/' "$REDSHIFTDDL"
-                        sed -i '413s/.*/  condition_status_source_value	  VARCHAR(255)  	NULL,/' "$REDSHIFTDDL"
-                        sed -i '437s/.*/  measurement_source_value		  VARCHAR(255)	NULL ,/' "$REDSHIFTDDL"
-                        sed -i '440s/.*/  value_source_value			      VARCHAR(255)	NULL/' "$REDSHIFTDDL"
-                        sed -i '494s/.*/  value_as_string				        VARCHAR(255)	NULL ,/' "$REDSHIFTDDL"
-                        sed -i '546s/.*/  place_of_service_source_value   VARCHAR(255)	  	NULL/' "$REDSHIFTDDL"
-                        sed -i '676s/.*/  dose_era_start_date	    DATE			  NULL,/' "$REDSHIFTDDL"
-                        sed -i '677s/.*/  dose_era_end_date	    DATE			  NULL/' "$REDSHIFTDDL"
+                        sed -i '226s/.*/  race_source_value           VARCHAR(255) NULL,/' "$REDSHIFTDDL"
+                        sed -i '340s/.*/  procedure_source_value      VARCHAR(255)    NULL ,/' "$REDSHIFTDDL"
+                        sed -i '352s/.*/  drug_exposure_start_date      DATE          NULL,/' "$REDSHIFTDDL"
+                        sed -i '354s/.*/  drug_exposure_end_date      DATE          NULL,/' "$REDSHIFTDDL"
+                        sed -i '411s/.*/  condition_source_value          VARCHAR(255)    NULL,/' "$REDSHIFTDDL"
+                        sed -i '413s/.*/  condition_status_source_value   VARCHAR(255)    NULL,/' "$REDSHIFTDDL"
+                        sed -i '437s/.*/  measurement_source_value      VARCHAR(255)  NULL ,/' "$REDSHIFTDDL"
+                        sed -i '440s/.*/  value_source_value            VARCHAR(255)  NULL/' "$REDSHIFTDDL"
+                        sed -i '494s/.*/  value_as_string               VARCHAR(255)  NULL ,/' "$REDSHIFTDDL"
+                        sed -i '546s/.*/  place_of_service_source_value   VARCHAR(255)      NULL/' "$REDSHIFTDDL"
+                        sed -i '676s/.*/  dose_era_start_date     DATE        NULL,/' "$REDSHIFTDDL"
+                        sed -i '677s/.*/  dose_era_end_date     DATE        NULL/' "$REDSHIFTDDL"
                     fi
 
                     #Insert Database Credentials into the scripts
@@ -912,7 +927,7 @@ Resources:
                     done
 
 
-                  - { Protocol: !If [ DeployACM, 'https://', 'http://' ], RCDomainName: !If [DeployRoute53, !Ref DomainName, !Ref EBEndpoint], HostedZone: !If [DeployRoute53, !Ref HostedZoneName, !Join ['.', [!Ref 'AWS::Region', 'elasticbeanstalk.com']]] }
+                  - { Protocol: !If [ DeployACM, 'https://', 'http://' ], RCDomainName: !Ref EBEndpoint, HostedZone: !Join ['.', [!Ref 'AWS::Region', 'elasticbeanstalk.com']] }
                 mode: 000777
                 owner: root
                 group: root
@@ -1530,6 +1545,7 @@ Resources:
             /opt/aws/bin/cfn-signal --stack ${AWS::StackName} --region ${AWS::Region} "${EC2WaitHandle}" -d "$SOLUTION_STACK"
             #sudo -E bash ./config_db.sh &>> log.txt
             sudo -E bash ./config_db.sh
+            /opt/aws/bin/cfn-signal --stack ${AWS::StackName} --region ${AWS::Region} "${ConfigDbWaitHandle}" -d "$SOLUTION_STACK"
             aws s3 cp /var/log/cloud-init-output.log s3://$BUCKET_NAME
             #Shutdown and terminate this temporary instance 
             sleep 20
@@ -1544,6 +1560,16 @@ Resources:
       Timeout: "3600"
       Count: 1
   EC2WaitHandle:
+    Type: "AWS::CloudFormation::WaitConditionHandle"
+  ConfigDbWaitCondition:
+    Type: "AWS::CloudFormation::WaitCondition"
+    DependsOn: "TempEC2Instance"
+    Properties: 
+      Handle: 
+        Ref: "ConfigDbWaitHandle"
+      Timeout: "3600"
+      Count: 1
+  ConfigDbWaitHandle:
     Type: "AWS::CloudFormation::WaitConditionHandle"
 
 Outputs:

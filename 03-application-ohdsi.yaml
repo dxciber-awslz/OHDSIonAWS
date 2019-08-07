@@ -1598,11 +1598,11 @@ Resources:
     Type: "AWS::CloudFormation::WaitConditionHandle"
   ConfigDbWaitCondition:
     Type: "AWS::CloudFormation::WaitCondition"
-    DependsOn: "TempEC2Instance"
+    DependsOn: "Ec2WaitCondition"
     Properties: 
       Handle: 
         Ref: "ConfigDbWaitHandle"
-      Timeout: "3600"
+      Timeout: "7200"
       Count: 1
   ConfigDbWaitHandle:
     Type: "AWS::CloudFormation::WaitConditionHandle"

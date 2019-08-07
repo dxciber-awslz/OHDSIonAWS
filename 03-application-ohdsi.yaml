@@ -26,6 +26,12 @@ Parameters:
     Default: 1
     Description: Specifies the minimum number of EC2 instances in the Web Autoscaling Group.
     Type: String
+  WebAsgDesired:
+    AllowedPattern: ^([0-2]?[0-9]|30)$
+    ConstraintDescription: Must be a number between 1 and 30.
+    Default: 1
+    Description: Specifies the desired number of EC2 instances in the Web Autoscaling Group.
+    Type: String
   WebInstanceType:
     AllowedValues:
       - t2.micro 
@@ -284,7 +290,12 @@ Mappings:
       Xmx: 8192m
     r5.xlarge:
       Xmx: 16384m
-
+  
+  Requires:
+    CfnLambda:
+      Type: Export
+      ExportName: LZ-CFN-DateTime-0-0-2-LambdaArn
+      Stack: LZ-CFN-DateTime-0-0-2
 
 Conditions:
   DeployRoute53: 
@@ -313,6 +324,14 @@ Resources:
             S3Bucket: !Ref EBBucket
             S3Key: ohdsi-webapi-atlas.zip
           VersionLabel: Initial Version
+  Now:
+    Metadata:
+      UpdateWhenDesiredCapacityChange: !Ref WebAsgDesired
+    Type: 'Custom::DateTime'
+    Properties:
+      ServiceToken: 
+        Fn::ImportValue: !FindInMap [ Requires, CfnLambda, ExportName ]
+      Format: '%Y-%m-%dT%H:%M:%SZ'
   OHDSIEnvironmentACM:
     Type: 'AWS::ElasticBeanstalk::Environment'
     Condition: DeployACM
@@ -344,6 +363,22 @@ Resources:
         - Namespace: aws:autoscaling:asg
           OptionName: MaxSize
           Value: !Ref WebAsgMax
+        - Namespace: aws:autoscaling:scheduledaction
+          ResourceName: SetupDesiredCapacity
+          OptionName: DesiredCapacity
+          Value: !Ref WebAsgDesired
+        - Namespace: aws:autoscaling:scheduledaction
+          ResourceName: SetupDesiredCapacity
+          OptionName: MinSize
+          Value: !Ref WebAsgMin
+        - Namespace: aws:autoscaling:scheduledaction
+          ResourceName: SetupDesiredCapacity
+          OptionName: MaxSize
+          Value: !Ref WebAsgMax
+        - Namespace: aws:autoscaling:scheduledaction
+          ResourceName: SetupDesiredCapacity
+          OptionName: StartTime
+          Value: !GetAtt Now.Value
         - Namespace: aws:autoscaling:launchconfiguration
           OptionName: EC2KeyName
           Value: !Ref 'EC2KeyName'

@@ -64,6 +64,7 @@ Metadata:
         - WebInstanceType
         - WebAsgMin
         - WebAsgMax
+        - WebAsgDesired
         - AtlasSecurity
     - Label:
         default: OHDSI Component Versions
@@ -147,6 +148,8 @@ Metadata:
         default: Minimum Atlas/WebAPI Instances
       WebAsgMax:
         default: Maximum Atlas/WebAPI Instances
+      WebAsgDesired:
+        default: Desired Atlas/WebAPI Instances
       WebInstanceType:
         default: Web Tier Instance Type
       AtlasSecurity:
@@ -233,12 +236,12 @@ Parameters:
   S3TemplatesBucket:
     Type: String
     Description: '[ REQUIRED ] Name of the bucket where the CFN templates are stored'
-    default: ohdsi-rstudio
+    Default: ohdsi-rstudio
     AllowedPattern: (?=^.{3,63}$)(?!^(\d+\.)+\d+$)(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)
   S3TemplatesPrefix:
     Type: String
     Description: '[ REQUIRED ] Path in the bucket where the CFN templates are stored'
-    default: /
+    Default: /
     
   EC2KeyName:
     ConstraintDescription: Must be letters (upper or lower), numbers, and special characters.
@@ -382,7 +385,13 @@ Parameters:
   WebAsgMin:
     AllowedPattern: ^([0-0]?[0-9]|10)$
     ConstraintDescription: Must be a number between 0 and 10.
-    Default: 2
+    Default: 1
+    Description: Specifies the minimum number of EC2 instances in the Web Autoscaling Group.  A value of >1 will create a highly available environment by placing instances in multiple availability zones.
+    Type: String
+  WebAsgDesired:
+    AllowedPattern: ^([0-0]?[0-9]|10)$
+    ConstraintDescription: Must be a number between 0 and 10.
+    Default: 1
     Description: Specifies the minimum number of EC2 instances in the Web Autoscaling Group.  A value of >1 will create a highly available environment by placing instances in multiple availability zones.
     Type: String
   AtlasSecurity:
@@ -610,14 +619,14 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: !Join 
-        - ""
-        - - "https://s3.amazonaws.com/"
+        - "/"
+        - - "https://s3.amazonaws.com"
           - !Ref S3TemplatesBucket
           - !Ref S3TemplatesPrefix 
           - "01-vpc-ohdsi.yaml"
       Parameters:
         CreateVpc: !Ref CreateVpc
-        VpcId: !Ref VPCId
+        VPCId: !Ref VPCId
         SubnetPublicA: !Ref SubnetPublicA
         SubnetPublicB: !Ref SubnetPublicB
         SubnetAppA: !Ref SubnetAppA
@@ -646,8 +655,8 @@ Resources:
         R53DomainName: !Join ['', [!Ref DomainName, '.', !Ref HostedZoneName]]
         SubjectAlternativeNames: !Join ['', ['rstudio.', !Ref DomainName, '.', !Ref HostedZoneName]]
       TemplateURL: !Join 
-        - ""
-        - - "https://s3.amazonaws.com/"
+        - "/"
+        - - "https://s3.amazonaws.com"
           - !Ref S3TemplatesBucket
           - !Ref S3TemplatesPrefix
           - 01-certificate-ohdsi.yaml
@@ -657,8 +666,8 @@ Resources:
     DependsOn: VPCStack
     Properties:
       TemplateURL: !Join 
-        - ""
-        - - "https://s3.amazonaws.com/"
+        - "/"
+        - - "https://s3.amazonaws.com"
           - !Ref S3TemplatesBucket
           - !Ref S3TemplatesPrefix
           - 02-databases-ohdsi.yaml
@@ -687,8 +696,8 @@ Resources:
     DependsOn: DatabasesStack
     Properties:
       TemplateURL: !Join 
-        - ""
-        - - "https://s3.amazonaws.com/"
+        - "/"
+        - - "https://s3.amazonaws.com"
           - !Ref S3TemplatesBucket
           - !Ref S3TemplatesPrefix
           - 02-rstudio-ohdsi.yaml
@@ -740,6 +749,8 @@ Resources:
           !Ref WebAsgMax
         WebAsgMin:
           !Ref WebAsgMin
+        WebAsgDesired:
+          !Ref WebAsgDesired
         WebInstanceType:
           !Ref WebInstanceType
         EBEndpoint:
@@ -802,14 +813,13 @@ Resources:
         AtlasSecurity: !Ref AtlasSecurity
         UserList: !Ref 'RStudioUserList'
       TemplateURL: !Join 
-        - ""
-        - - "https://s3.amazonaws.com/"
+        - "/"
+        - - "https://s3.amazonaws.com"
           - !Ref S3TemplatesBucket
           - !Ref S3TemplatesPrefix
           - 03-application-ohdsi.yaml
   route53:
     Condition: DeployRoute53
-    DependsOn: ohdsielasticbeanstalk
     Type: AWS::CloudFormation::Stack
     Properties:
       Parameters:
@@ -822,8 +832,8 @@ Resources:
         DomainName:
           !Ref DomainName
       TemplateURL: !Join 
-        - ""
-        - - "https://s3.amazonaws.com/"
+        - "/"
+        - - "https://s3.amazonaws.com"
           - !Ref S3TemplatesBucket
           - !Ref S3TemplatesPrefix
           - 03-route53-ohdsi.yaml

@@ -8,9 +8,7 @@
 
 
 AWSTemplateFormatVersion: '2010-09-09'
-Description: This CloudFormation Template deploys a complete OHDSI environment.  It
-  depends on the OHDSI-VPC CloudFormation Template.
-
+Description: TDeploys the OHDSI Atlas and WebApi apps in an ElasticBeanstalk Environment. Sets up Atlas users and loads OHDSI schema and sample data on databases.
 
 
 Parameters:

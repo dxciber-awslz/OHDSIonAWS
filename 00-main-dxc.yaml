@@ -1,4 +1,4 @@
-# Copyright DXC TEchnology 2019
+# Copyright DXC Technology 2019
 #
 # Invokes the master template with all required parameters. Serves as a parameter store.
 #
@@ -35,12 +35,12 @@ Parameters:
   S3TemplatesBucket:
     Type: String
     Description: '[ REQUIRED ] Name of the bucket where the CFN templates are stored'
-    default: ohdsi-rstudio
+    Default: ohdsi-rstudio
     AllowedPattern: (?=^.{3,63}$)(?!^(\d+\.)+\d+$)(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)
   S3TemplatesPrefix:
     Type: String
     Description: '[ REQUIRED ] Path in the bucket where the CFN templates are stored'
-    default: /
+    Default: /
 
   AccessType:
     Type: String
@@ -62,21 +62,75 @@ Resources:
       Description: Postgres and Redshift databases master password
       Name: OHDSI/DatabaseMasterPassword
       GenerateSecretString: 
-        ExcludeCharacters: '"@/\'
-        ExcludeLowerCase: false
+        ExcludeCharacters: '!"$&''()./:;<=>?@[\]`{|}'
+        ExcludeLowercase: false
         ExcludeNumbers: false
         ExcludePunctuation: false
-        ExcludeUpperCase: false
+        ExcludeUppercase: false
         IncludeSpace: false
         PasswordLength: 30
+        RequireEachIncludedType: true
+      KmsKeyId: !ImportValue OHDSI-POC-KmsKeyArn
 
-  MainStack:
+  AtlasPasswordCdamien:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: Atlas WebAPI user Damien Caldy password
+      Name: OHDSI/users/cdamien
+      GenerateSecretString: 
+        ExcludeCharacters: '!"$&''()./:;<=>?@[\]`{|}'
+        ExcludeLowercase: false
+        ExcludeNumbers: false
+        ExcludePunctuation: false
+        ExcludeUppercase: false
+        IncludeSpace: false
+        PasswordLength: 10
+        RequireEachIncludedType: true
+      KmsKeyId: !ImportValue OHDSI-POC-KmsKeyArn
+
+  AtlasPasswordLcobler:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: Atlas WebAPI user Lara Cobler password
+      Name: OHDSI/users/lcobler
+      GenerateSecretString: 
+        ExcludeCharacters: '!"$&''()./:;<=>?@[\]`{|}'
+        ExcludeLowercase: false
+        ExcludeNumbers: false
+        ExcludePunctuation: false
+        ExcludeUppercase: false
+        IncludeSpace: false
+        PasswordLength: 10
+        RequireEachIncludedType: true
+      KmsKeyId: !ImportValue OHDSI-POC-KmsKeyArn
+
+  AtlasPasswordFlozano3:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: Atlas WebAPI user Fco Lozano password
+      Name: OHDSI/users/flozano3
+      GenerateSecretString: 
+        ExcludeCharacters: '!"$&''()./:;<=>?@[\]`{|}'
+        ExcludeLowercase: false
+        ExcludeNumbers: false
+        ExcludePunctuation: false
+        ExcludeUppercase: false
+        IncludeSpace: false
+        PasswordLength: 10
+        RequireEachIncludedType: true
+      KmsKeyId: !ImportValue OHDSI-POC-KmsKeyArn
+
+  MasterStack:
     Type: AWS::CloudFormation::Stack
-    DependsOn: DBPasswordSecret
+    DependsOn:
+      - DBPasswordSecret
+      - AtlasPasswordCdamien
+      - AtlasPasswordLcobler
+      - AtlasPasswordFlozano3 
     Properties:
       TemplateURL: !Join 
-        - ""
-        - - "https://s3.amazonaws.com/"
+        - "/"
+        - - "https://s3.amazonaws.com"
           - !Ref S3TemplatesBucket
           - !Ref S3TemplatesPrefix 
           - !If
@@ -91,7 +145,7 @@ Resources:
         EBEndpoint: dxc-lsorp
         UseRoute53Boolean: true
         UseACMBoolean: true
-        HostedZoneId: !ImportValue LZ-DNS-ls-orp-com-zones-PublicZoneId
+        HostedZoneId: !ImportValue LZ-DNS-dxc-lsorp-com-zones-PublicZoneId
         HostedZoneName: dxc-lsorp.com
         DomainName: poc
         MultiAZDatabase: false
@@ -103,7 +157,8 @@ Resources:
         SourcesBucket: !ImportValue OHDSI-POC-OmopData-BucketName
         WebInstanceType: t3.medium
         WebAsgMax: 2
-        WebAsgMin: 0
+        WebAsgMin: 1
+        WebAsgDesired: 1
         AtlasSecurity: true
         RStudioInstanceType: t3.medium
         RStudioHomeDirectorySize: 50
@@ -111,6 +166,10 @@ Resources:
           - ","
           - - cdamien
             - '{{resolve::secretsmanager:OHDSI/users/cdamien:password}}'
+            - lcobler
+            - '{{resolve::secretsmanager:OHDSI/users/lcobler:password}}'
+            - flozano3
+            - '{{resolve::secretsmanager:OHDSI/users/flozano3:password}}'
         SageMakerBucket: !ImportValue OHDSI-POC-SageMaker-BucketName
         OMOPv: '5.3.1'
         Atlasv: '2.7.2'
@@ -131,10 +190,10 @@ Resources:
         PredictionComparisonv: '1.0.0'
         CreateVpc: false
         VPCId: !ImportValue LZ-VPC-USE2-10-161-0-0-L-OHDSI-VPCID
-        SubnetPublicA: LZ-VPC-USE2-10-161-0-0-L-OHDSI-AZAPublicId
-        SubnetPublicB: LZ-VPC-USE2-10-161-0-0-L-OHDSI-AZBPublicId
-        SubnetAppA: LZ-VPC-USE2-10-161-0-0-L-OHDSI-AZAPrivateId
-        SubnetAppB: LZ-VPC-USE2-10-161-0-0-L-OHDSI-AZBPrivateId
-        SubnetDataA: LZ-VPC-USE2-10-161-0-0-L-OHDSI-AZAPrivateId
-        SubnetDataB: LZ-VPC-USE2-10-161-0-0-L-OHDSI-AZBPrivateId
+        SubnetPublicA: !ImportValue LZ-VPC-USE2-10-161-0-0-L-OHDSI-AZAPublicId
+        SubnetPublicB: !ImportValue LZ-VPC-USE2-10-161-0-0-L-OHDSI-AZBPublicId
+        SubnetAppA: !ImportValue LZ-VPC-USE2-10-161-0-0-L-OHDSI-AZAPrivateId
+        SubnetAppB: !ImportValue LZ-VPC-USE2-10-161-0-0-L-OHDSI-AZBPrivateId
+        SubnetDataA: !ImportValue LZ-VPC-USE2-10-161-0-0-L-OHDSI-AZAPrivateId
+        SubnetDataB: !ImportValue LZ-VPC-USE2-10-161-0-0-L-OHDSI-AZBPrivateId
         

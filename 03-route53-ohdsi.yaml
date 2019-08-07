@@ -9,7 +9,7 @@
 ---
 AWSTemplateFormatVersion: 2010-09-09
 
-Description: Reference Architecture to host Moodle on AWS - Creates Route 53 record set (if selected)
+Description: Creates custom DNS records to access RStudio and the OHDSI Applications
 
 Metadata:
 

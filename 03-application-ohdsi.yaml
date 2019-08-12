@@ -682,7 +682,9 @@ Resources:
 
                     mv settings_security.xml ./WebAPI/settings.xml
                     psql -d OHDSI --host=$RDS_ENDPOINT --port=5432 -U ohdsi_security_user -a -f setup_security.sql
-                  
+                    
+                    # DXC Technology :Install Python BCrypt library
+                    pip install -y py-bcrypt
                     count=1
                     for i in $(echo $ATLASUSERS | sed "s/,/ /g")
                     do
@@ -691,7 +693,9 @@ Resources:
                         let count+=1
                         continue
                       else
-                        atlaspw=`htpasswd -bnBC 4 "" $i | tr -d ':\n' | sed 's/$2y/$2a/'`
+                        # DXC Technology : Change the BCrypt hash method to make it compatible with WebAPI
+                        #atlaspw=`htpasswd -bnBC 4 "" $i | tr -d ':\n' | sed 's/$2y/$2a/'`
+                        atlaspw=`python -c "import bcrypt; print(bcrypt.hashpw(\"$i\", bcrypt.gensalt(log_rounds=4)))"`
                         psql -d OHDSI --host=$RDS_ENDPOINT --port=5432 -U ohdsi_security_user -a -c "insert into authentication.security (email,password) values ('$username', E'$atlaspw');"
                         let count+=1
                       fi
@@ -1366,7 +1370,7 @@ Resources:
                                           password='DATABASE_PASSWORD', schema="CDM_PLACEHOLDER", port="5439")
                   achillesResults <- achilles(connectionDetails, cdmDatabaseSchema="CDM_PLACEHOLDER", 
                                           resultsDatabaseSchema="RESULTS_PLACEHOLDER", sourceName="SOURCENAME_PLACEHOLDER", 
-                                          cdmVersion = "5", vocabDatabaseSchema="CDM_PLACEHOLDER")              
+                                          cdmVersion = "5", vocabDatabaseSchema="CDM_PLACEHOLDER", createTable = "TRUE")              
                 mode: 000664
                 owner: root
                 group: root           
@@ -1570,7 +1574,7 @@ Resources:
             #Use cfn-init to grab and apply the files specified in the above UserData
             /opt/aws/bin/cfn-init --verbose --stack ${AWS::StackName} --resource TempEC2Instance --region ${AWS::Region}
             cd /tmp
-            git clone -b v${Atlasv} https://github.com/OHDSI/Atlas
+            git clone -b vv2.7.1 https://github.com/OHDSI/Atlas
             git clone -b v${WebAPIv} https://github.com/OHDSI/WebAPI
             git clone -b v${OMOPv} https://github.com/OHDSI/CommonDataModel
             sudo service awslogs start
@@ -1581,7 +1585,7 @@ Resources:
             #sudo -E bash ./config_db.sh &>> log.txt
             sudo -E bash ./config_db.sh
             /opt/aws/bin/cfn-signal --stack ${AWS::StackName} --region ${AWS::Region} "${ConfigDbWaitHandle}" -d "$SOLUTION_STACK"
-            aws s3 cp /var/log/cloud-init-output.log s3://$BUCKET_NAME
+            aws s3 cp /var/log/cloud-init-output.log s3://$BUCKET_NAME/cloud-init-output-${EBEndpoint}-`date +%F-%T`.log
             #Shutdown and terminate this temporary instance 
             sleep 20
             shutdown -h now
@@ -1598,7 +1602,7 @@ Resources:
     Type: "AWS::CloudFormation::WaitConditionHandle"
   ConfigDbWaitCondition:
     Type: "AWS::CloudFormation::WaitCondition"
-    DependsOn: "Ec2WaitCondition"
+    DependsOn: "EC2WaitCondition"
     Properties: 
       Handle: 
         Ref: "ConfigDbWaitHandle"

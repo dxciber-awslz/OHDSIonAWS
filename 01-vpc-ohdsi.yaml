@@ -626,6 +626,7 @@ Resources:
               - "elasticbeanstalk:RestartAppServer"
               - "elasticbeanstalk:ListAvailableSolutionStacks"
               - "elasticbeanstalk:DescribeEnvironmentResources"
+              - "elasticbeanstalk:DescribeEnvironments"
               - "elasticloadbalancing:RegisterTargets"
               - "elasticloadbalancing:DescribeTargetGroups"
               - "elasticloadbalancing:DescribeLoadBalancers"

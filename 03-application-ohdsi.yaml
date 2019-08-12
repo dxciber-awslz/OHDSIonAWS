@@ -1368,6 +1368,9 @@ Resources:
                   library(Achilles)
                   connectionDetails <- createConnectionDetails(dbms="redshift", server="REDSHIFT_ENDPOINT/mycdm", user="master",
                                           password='DATABASE_PASSWORD', schema="CDM_PLACEHOLDER", port="5439")
+                  conn <- connect(connectionDetails)
+                  dbSendStatement(conn, "CREATE TABLE synthea1kresults.cohort (cohort_definition_id INTEGER NOT NULL,subject_id INTEGER NOT NULL,cohort_start_date DATE NOT NULL,cohort_end_date DATE NOT NULL);")
+
                   achillesResults <- achilles(connectionDetails, cdmDatabaseSchema="CDM_PLACEHOLDER", 
                                           resultsDatabaseSchema="RESULTS_PLACEHOLDER", sourceName="SOURCENAME_PLACEHOLDER", 
                                           cdmVersion = "5", vocabDatabaseSchema="CDM_PLACEHOLDER", createTable = TRUE)              

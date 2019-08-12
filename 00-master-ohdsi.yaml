@@ -13,6 +13,8 @@
 #   - Templates location made selectable to be able to use customized templates
 #   - Database master password generated and stored in SecretsManager instead of requested as parameter
 #   - VPC creation optional (VPC and Subnets IDs requested as parameters)
+#   - Added setting DesiredCapacity on ASG
+#   - Removed Custom DNS record dependency on the application stack, that made the temporary instances script fail
 
 AWSTemplateFormatVersion: 2010-09-09
 
@@ -612,6 +614,8 @@ Conditions:
   DeployACM: !And 
     - !Equals [ true, !Ref UseACMBoolean ]
     - !Condition DeployRoute53
+  DeployElasticBeanstalk:
+    !Equals [ true, true ]
 
 Resources:
 
@@ -733,6 +737,7 @@ Resources:
 
   ohdsielasticbeanstalk:
     DependsOn: [ RStudioStack ]
+    Condition: DeployElasticBeanstalk
     Type: AWS::CloudFormation::Stack
     Properties:
       Parameters:

@@ -1370,7 +1370,7 @@ Resources:
                                           password='DATABASE_PASSWORD', schema="CDM_PLACEHOLDER", port="5439")
                   achillesResults <- achilles(connectionDetails, cdmDatabaseSchema="CDM_PLACEHOLDER", 
                                           resultsDatabaseSchema="RESULTS_PLACEHOLDER", sourceName="SOURCENAME_PLACEHOLDER", 
-                                          cdmVersion = "5", vocabDatabaseSchema="CDM_PLACEHOLDER", createTable = "TRUE")              
+                                          cdmVersion = "5", vocabDatabaseSchema="CDM_PLACEHOLDER", createTable = TRUE)              
                 mode: 000664
                 owner: root
                 group: root           

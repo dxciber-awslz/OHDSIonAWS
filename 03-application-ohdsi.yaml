@@ -11,6 +11,13 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: Deploys the OHDSI Atlas and WebApi apps in an ElasticBeanstalk Environment. Sets up Atlas users and loads OHDSI schema and sample data on databases.
 
 Parameters:
+  RunInitialization:
+    AllowedValues:
+      - true
+      - false
+    Default: true
+    Description: Specifies whether the initial application compilation and deploy and the databases setup needs to be done, using the temporary instance. Only true in the initial deployment. Change to false afterwards. 
+    Type: String
   WebAsgMax:
     AllowedPattern: ^((?!0$)[1-2]?[0-9]|30)$
     ConstraintDescription: Must be a number between 1 and 30.
@@ -193,7 +200,6 @@ Parameters:
   RSRoleArn:
     Type: String
 
-
 #Mapping to find the Amazon Linux AMI in each region.  This AMI is used for the temporary EC2 server.
 Mappings:
   RegionMap:
@@ -305,14 +311,14 @@ Conditions:
   NotDeployACM: !Or
     - !Equals [ false, !Ref UseACMBoolean ]
     - !Equals [ false, !Ref UseRoute53Boolean ]
-
+  RunInitialization:
+    !Equals [ true, !Ref RunInitialization ] 
 
 Resources:
 
 # Defines the Elastic Beanstalk environment that deploys the load balancer and Atlas/WebAPI Tomcat servers in an auto-scaling group.
   OHDSIApp:
     Type: 'AWS::ElasticBeanstalk::Application'
-    DependsOn: EC2WaitCondition
     Description: OHDSI Atlas and WebAPI
     Properties:
       ApplicationVersions:
@@ -336,7 +342,7 @@ Resources:
     Properties:
       ApplicationName: !Ref OHDSIApp
       Description: Elastic Beanstalk deployment of Atlas / WebAPI
-      SolutionStackName: !Select [1, !Split ['"', !Select [0, !Split ['}', !Select [1, !Split [':', !GetAtt 'EC2WaitCondition.Data']]]]]]
+      SolutionStackName: 64bit Amazon Linux 2018.03 v3.1.6 running Tomcat 8.5 Java 8
       VersionLabel: Initial Version
       EnvironmentName: !Ref EBEndpoint
       CNAMEPrefix: !Ref EBEndpoint
@@ -480,11 +486,10 @@ Resources:
   OHDSIEnvironmentNoACM:
     Type: 'AWS::ElasticBeanstalk::Environment'
     Condition: NotDeployACM
-    DependsOn: EC2WaitCondition
     Properties:
       ApplicationName: !Ref OHDSIApp
       Description: OHDSI Atlas and WebAPI
-      SolutionStackName: !Select [1, !Split ['"', !Select [0, !Split ['}', !Select [1, !Split [':', !GetAtt 'EC2WaitCondition.Data']]]]]]
+      SolutionStackName: 64bit Amazon Linux 2018.03 v3.1.6 running Tomcat 8.5 Java 8
       VersionLabel: Initial Version
       EnvironmentName: !Ref EBEndpoint
       CNAMEPrefix: !Ref EBEndpoint
@@ -603,6 +608,7 @@ Resources:
 # This is a temporary EC2 server used to add the necessary Elastic Beanstalk scripts to the Project REDCap source code zip file.
   TempEC2Instance:
     Type: AWS::EC2::Instance
+    Condition: RunInitialization
     Metadata:
       AWS::CloudFormation::Init:
         config:
@@ -1528,7 +1534,7 @@ Resources:
                 owner: root
                 group: root
     Properties:
-      InstanceInitiatedShutdownBehavior: 'terminate'
+      InstanceInitiatedShutdownBehavior: 'stop'
       InstanceType: 'm5.xlarge'
       KeyName: !Ref 'EC2KeyName'
       ImageId: !FindInMap
@@ -1595,6 +1601,7 @@ Resources:
           - { RstudioTGArn: !Ref RStudioTargetGroupArn }
   EC2WaitCondition:
     Type: "AWS::CloudFormation::WaitCondition"
+    Condition: RunInitialization
     DependsOn: "TempEC2Instance"
     Properties: 
       Handle: 
@@ -1602,9 +1609,11 @@ Resources:
       Timeout: "3600"
       Count: 1
   EC2WaitHandle:
+    Condition: RunInitialization
     Type: "AWS::CloudFormation::WaitConditionHandle"
   ConfigDbWaitCondition:
     Type: "AWS::CloudFormation::WaitCondition"
+    Condition: RunInitialization
     DependsOn: "EC2WaitCondition"
     Properties: 
       Handle: 
@@ -1612,6 +1621,7 @@ Resources:
       Timeout: "7200"
       Count: 1
   ConfigDbWaitHandle:
+    Condition: RunInitialization
     Type: "AWS::CloudFormation::WaitConditionHandle"
 
 Outputs:

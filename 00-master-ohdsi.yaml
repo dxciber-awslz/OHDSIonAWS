@@ -845,7 +845,7 @@ Resources:
 
 Outputs:
   RDSEndpoint:
-    Value: DatabasesStack.Outputs.RDSEndpoint
+    Value: !GetAtt DatabasesStack.Outputs.RDSEndpoint
   AtlasURL:
     Value: !If [DeployRoute53, !If [DeployACM, !Join ['', ['https://', !Ref DomainName, '.', !Ref HostedZoneName, '/']], !Join ['', ['http://', !Ref DomainName, '.', !Ref HostedZoneName, '/']]], !Join ['', ['http://', !Ref EBEndpoint, '.', !Ref 'AWS::Region', '.elasticbeanstalk.com']]]
   RStudioURL:

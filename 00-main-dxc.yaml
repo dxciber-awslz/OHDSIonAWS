@@ -72,6 +72,25 @@ Resources:
         RequireEachIncludedType: true
       KmsKeyId: !ImportValue OHDSI-POC-KmsKeyArn
 
+  EnvironmentAccessSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: Postgres and Redshift databases access settings
+      Name: OHDSI/POC/EnvironmentAccess
+      SecretString: !Sub 
+        - '{"database":"${database}","webapiSchema":"${webapiSchema}","securitySchema":"${securitySchema}","securityTable":"${securityTable}","securityUsername":"${securityUsername}","securityPassword":"${securityPassword}","appUsername":"${appUsername}","appPassword":"${appPassword}","port":"${port}","host":"${host}"}'
+        - database : OHDSI
+          webapiSchema: webapi
+          securitySchema: authentication
+          securityTable: security
+          securityUsername: ohdsi_security_user
+          securityPassword: '{{resolve:secretsmanager:OHDSI/DatabaseMasterPassword}}'
+          appUsername: ohdsi_app_user
+          appPassword: '{{resolve:secretsmanager:OHDSI/DatabaseMasterPassword}}'
+          port: 5432
+          host: !GetAtt MasterStack.Outputs.RDSEndpoint
+      KmsKeyId: !ImportValue OHDSI-POC-KmsKeyArn
+
   AtlasPasswordCdamien:
     Type: AWS::SecretsManager::Secret
     Properties:

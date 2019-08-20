@@ -204,7 +204,17 @@ Mappings:
       AMI: ami-28ddc154
     ap-northeast-2:
       AMI: ami-efaf0181
-
+  Tags:
+    architectureId:
+      Value: OHDSI
+    architectureLayer:
+      Value: Atlas/WebAPI
+    project: 
+      Value: OHDSI
+    environment:
+      Value: POC
+    schedule:
+      Value: LZ-ISCH-Schedules-WD0818CET
 
 Resources:
 
@@ -610,6 +620,18 @@ Resources:
                 fi
             done
           - { AutoSMBucket: !Join [ "", [ !Ref "AWS::AccountId", '-', !Select [ 1, !Split [ '-', !Ref 'VPCSubnet'] ], '-sagemakerplp' ] ] }
+      Tags:
+        - Key: lz:architectureId
+          Value: !FindInMap [Tags,architectureId,Value]
+        - Key: lz:architectureLayer
+          Value: !FindInMap [Tags,architectureLayer,Value]
+        - Key: lz:project
+          Value: !FindInMap [Tags,project,Value]
+        - Key: lz:environment
+          Value: !FindInMap [Tags,environment,Value]
+        - Key: lz:schedule
+          Value: !FindInMap [Tags,schedule,Value]
+
   RStudioTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     DependsOn: RStudioInstance

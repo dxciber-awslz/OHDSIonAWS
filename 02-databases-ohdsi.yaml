@@ -62,6 +62,18 @@ Parameters:
   RSRoleArn:
     Type: String
 
+Mappings:
+  Tags:
+    architectureId:
+      Value: OHDSI
+    architectureLayer:
+      Value: Atlas/WebAPI
+    project: 
+      Value: OHDSI
+    environment:
+      Value: POC
+    schedule:
+      Value: LZ-ISCH-Schedules-WD0818CET
 
 Conditions:
   DeployMultiAZDB: 
@@ -90,6 +102,18 @@ Resources:
         Ref: RDSDBClusterParameterGroup
       VpcSecurityGroupIds:
         - !Ref SGData
+      Tags:
+        - Key: lz:architectureId
+          Value: !FindInMap [Tags,architectureId,Value]
+        - Key: lz:architectureLayer
+          Value: !FindInMap [Tags,architectureLayer,Value]
+        - Key: lz:project
+          Value: !FindInMap [Tags,project,Value]
+        - Key: lz:environment
+          Value: !FindInMap [Tags,environment,Value]
+        - Key: lz:schedule
+          Value: !FindInMap [Tags,schedule,Value]
+
   RDSDBInstance1:
     Type: AWS::RDS::DBInstance
     Properties:
@@ -103,6 +127,18 @@ Resources:
         Ref: RDSCluster
       PubliclyAccessible: 'false'
       DBInstanceClass: !Ref DatabaseInstanceType
+      Tags:
+        - Key: lz:architectureId
+          Value: !FindInMap [Tags,architectureId,Value]
+        - Key: lz:architectureLayer
+          Value: !FindInMap [Tags,architectureLayer,Value]
+        - Key: lz:project
+          Value: !FindInMap [Tags,project,Value]
+        - Key: lz:environment
+          Value: !FindInMap [Tags,environment,Value]
+        - Key: lz:schedule
+          Value: !FindInMap [Tags,schedule,Value]
+
 # Only create the second instance if the user specified a Multi-AZ Database  
   RDSDBInstance2:
     Condition: DeployMultiAZDB
@@ -118,6 +154,18 @@ Resources:
         Ref: RDSCluster
       PubliclyAccessible: 'false'
       DBInstanceClass: !Ref DatabaseInstanceType
+      Tags:
+        - Key: lz:architectureId
+          Value: !FindInMap [Tags,architectureId,Value]
+        - Key: lz:architectureLayer
+          Value: !FindInMap [Tags,architectureLayer,Value]
+        - Key: lz:project
+          Value: !FindInMap [Tags,project,Value]
+        - Key: lz:environment
+          Value: !FindInMap [Tags,environment,Value]
+        - Key: lz:schedule
+          Value: !FindInMap [Tags,schedule,Value]
+
   RDSDBClusterParameterGroup:
     Type: AWS::RDS::DBClusterParameterGroup
     Properties:

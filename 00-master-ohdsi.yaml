@@ -822,7 +822,7 @@ Resources:
         - - "https://s3.amazonaws.com"
           - !Ref S3TemplatesBucket
           - !Ref S3TemplatesPrefix
-          - 03-application-ohdsi.yaml
+          - 03-application-ohdsi-postdeploy.yaml
   route53:
     Condition: DeployRoute53
     Type: AWS::CloudFormation::Stack
@@ -844,6 +844,8 @@ Resources:
           - 03-route53-ohdsi.yaml
 
 Outputs:
+  RDSEndpoint:
+    Value: DatabasesStack.Outputs.RDSEndpoint
   AtlasURL:
     Value: !If [DeployRoute53, !If [DeployACM, !Join ['', ['https://', !Ref DomainName, '.', !Ref HostedZoneName, '/']], !Join ['', ['http://', !Ref DomainName, '.', !Ref HostedZoneName, '/']]], !Join ['', ['http://', !Ref EBEndpoint, '.', !Ref 'AWS::Region', '.elasticbeanstalk.com']]]
   RStudioURL:

@@ -1,3 +1,4 @@
+![DXC Technology](./images/dxc_wordmark_1c_blk_cmyk.gif)
 # OHDSI on AWS by DXC Technology
 
 This repository forks from the [official OHDSIonAWS repository](https://github.com/OHDSI/OHDSIonAWS), and contains updates, fixes and improvements introduced by DXC Technology.

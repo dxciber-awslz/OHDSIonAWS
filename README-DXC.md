@@ -11,16 +11,6 @@ This document summarizes those changes and provides an updated deployment proced
 
 The use of the Official version S3 bucket is replaced by the selection of the bucket and object prefix where the deployment templates are found. 
 
-## Parameter Storage Template
-
-CFN templates do not store the information about the parameters necessary to deploy them under a certain scenario. DXC Technology advocates a Software Defined Infrastructure philosophy, that requires storing the parameter values used to deploy the environment as software artifacts. To implement it on CFN, we introduced a new tamplate `00-main.yaml` that serves the following purposes:
-
-  - Launches the official master CFN stack with the selected parameters, that are thus stored with the template.
-  - Creates AWS SM secrets where all passwords and credentials are stored:
-    - Initial ATLAS users passwords
-    - Databases master password
-    - Environment access details. Used by DXC developed scripts, Lambdas and other operation related artifacts.
-    
 ## VPC Independence
 
 The official templates require the creation of a new VPC. DXC Technology, as many organizations, uses its own VPC design that is deployed before the OHDSI environment. The master and vpc templates were modified to accept additional parameters that allow disabling the creation of the VPC resources, replaced by the use of parameter values.
@@ -96,8 +86,6 @@ To create this post-deployment template it has been necessary to remove the depe
 The dependency is replaced with the hard coded value of the latest Tomcat Solution supported by ElasticBeanstalk. In the future bootstrapping process based on CodePipeline the dynamic obtention of this value will be restored.
 
 # Parameters
-
-As described in the `Changes To The Official Version` chapter, a new `00-main-dxc.template` template is used to store in the code repository the values used to create each environment, and store in AWS SecretsManager those values required for operation automation artifacts, and to provide also human operators with access to secret values such as the database master user password, in a secure and access-controlled way.  
 
 Besides the parameters defined by the official OHDSIonAWS templates, wich are described in the [README.md](README.md) document, the changes introduced by DXC Technology imply the following additional parameters:
 

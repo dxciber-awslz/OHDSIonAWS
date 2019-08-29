@@ -200,6 +200,11 @@ Parameters:
   RSRoleArn:
     Type: String
 
+  StopCron:
+    Type: String
+  StartCron:
+    Type: String
+
 #Mapping to find the Amazon Linux AMI in each region.  This AMI is used for the temporary EC2 server.
 Mappings:
   RegionMap:
@@ -323,7 +328,11 @@ Conditions:
     - !Equals [ false, !Ref UseACMBoolean ]
     - !Equals [ false, !Ref UseRoute53Boolean ]
   RunInitialization:
-    !Equals [ true, !Ref RunInitialization ] 
+    !Equals [ true, !Ref RunInitialization ]
+  ScheduledStop: !Not
+    - !Equals [ NEVER, !Ref StopCron ]
+  ScheduledStart: !Not
+    - !Equals [ NEVER, !Ref StartCron ]
 
 Resources:
 
@@ -404,6 +413,52 @@ Resources:
           ResourceName: SetupDesiredCapacity
           OptionName: StartTime
           Value: !GetAtt Now.Value
+        - Namespace: aws:autoscaling:scheduledaction
+          ResourceName: Stop
+          OptionName: MinSize,
+          Value: 0
+        - Namespace: aws:autoscaling:scheduledaction
+          ResourceName: Stop
+          OptionName: MaxSize
+          Value: 0
+        - Namespace: aws:autoscaling:scheduledaction
+          ResourceName: Stop
+          OptionName: DesiredCapacity
+          Value: 0
+        - Namespace: aws:autoscaling:scheduledaction
+          ResourceName: Stop,
+          OptionName: StartTime,
+          Value: !If
+            - ScheduledStop
+            - !GetAtt Now.Value
+            - '2071-12-27T00:00:00Z'
+        - Namespace: aws:autoscaling:scheduledaction
+          ResourceName: Stop,
+          OptionName: Recurrence
+          Value: !Ref StopCron
+        - Namespace: aws:autoscaling:scheduledaction
+          ResourceName: Start
+          OptionName: MinSize
+          Value: !Ref WebAsgMin
+        - Namespace: aws:autoscaling:scheduledaction
+          ResourceName: Start
+          OptionName: MaxSize
+          Value: !Ref WebAsgMax
+        - Namespace: aws:autoscaling:scheduledaction
+          ResourceName: Start
+          OptionName: DesiredCapacity
+          Value: !Ref WebAsgDesired
+        - Namespace: aws:autoscaling:scheduledaction
+          ResourceName: Start
+          OptionName: StartTime
+          Value: !If
+            - ScheduledStart
+            - !GetAtt Now.Value
+            - '2071-12-27T00:00:00Z'
+        - Namespace: aws:autoscaling:scheduledaction
+          ResourceName: Start
+          OptionName: Recurrence
+          Value: !Ref StartCron
         - Namespace: aws:autoscaling:launchconfiguration
           OptionName: EC2KeyName
           Value: !Ref 'EC2KeyName'
@@ -546,6 +601,62 @@ Resources:
         - Namespace: aws:autoscaling:asg
           OptionName: MaxSize
           Value: !Ref WebAsgMax
+        - Namespace: aws:autoscaling:scheduledaction
+          ResourceName: SetupDesiredCapacity
+          OptionName: DesiredCapacity
+          Value: !Ref WebAsgDesired
+        - Namespace: aws:autoscaling:scheduledaction
+          ResourceName: SetupDesiredCapacity
+          OptionName: MinSize
+          Value: !Ref WebAsgMin
+        - Namespace: aws:autoscaling:scheduledaction
+          ResourceName: SetupDesiredCapacity
+          OptionName: MaxSize
+          Value: !Ref WebAsgMax
+        - Namespace: aws:autoscaling:scheduledaction
+          ResourceName: SetupDesiredCapacity
+          OptionName: StartTime
+          Value: !GetAtt Now.Value
+        - Namespace: aws:autoscaling:scheduledaction
+          ResourceName: Stop
+          OptionName: MinSize,
+          Value: 0
+        - Namespace: aws:autoscaling:scheduledaction
+          ResourceName: Stop
+          OptionName: MaxSize
+          Value: 0
+        - Namespace: aws:autoscaling:scheduledaction
+          ResourceName: Stop
+          OptionName: DesiredCapacity
+          Value: 0
+        - Namespace: aws:autoscaling:scheduledaction
+          ResourceName: Stop,
+          OptionName: StartTime,
+          Value: !GetAtt Now.Value
+        - Namespace: aws:autoscaling:scheduledaction
+          ResourceName: Stop,
+          OptionName: Recurrence
+          Value: "00 16 * * 1-5"
+        - Namespace: aws:autoscaling:scheduledaction
+          ResourceName: Start
+          OptionName: MinSize
+          Value: !Ref WebAsgMin
+        - Namespace: aws:autoscaling:scheduledaction
+          ResourceName: Start
+          OptionName: MaxSize
+          Value: !Ref WebAsgMax
+        - Namespace: aws:autoscaling:scheduledaction
+          ResourceName: Start
+          OptionName: DesiredCapacity
+          Value: !Ref WebAsgDesired
+        - Namespace: aws:autoscaling:scheduledaction
+          ResourceName: Start
+          OptionName: StartTime
+          Value: !GetAtt Now.Value
+        - Namespace: aws:autoscaling:scheduledaction
+          ResourceName: Start
+          OptionName: Recurrence
+          Value: "00 06 * * 1-5"
         - Namespace: aws:autoscaling:launchconfiguration
           OptionName: EC2KeyName
           Value: !Ref 'EC2KeyName'
@@ -1622,8 +1733,10 @@ Resources:
             sudo service awslogs start
             #sudo -E bash ./config_ohdsi.sh &>> log.txt
             sudo -E bash ./config_ohdsi.sh
-            export SOLUTION_STACK=`aws elasticbeanstalk list-available-solution-stacks | grep "Tomcat 8" | head -1 | cut -d \" -f2`
-            /opt/aws/bin/cfn-signal --stack ${AWS::StackName} --region ${AWS::Region} "${EC2WaitHandle}" -d "$SOLUTION_STACK"
+            # Removed by DXC Technology to avoid dependency that blocks removing the instance resource
+            # export SOLUTION_STACK=`aws elasticbeanstalk list-available-solution-stacks | grep "Tomcat 8" | head -1 | cut -d \" -f2`
+            # /opt/aws/bin/cfn-signal --stack ${AWS::StackName} --region ${AWS::Region} "${EC2WaitHandle}" -d "$SOLUTION_STACK"
+            /opt/aws/bin/cfn-signal --stack ${AWS::StackName} --region ${AWS::Region} "${EC2WaitHandle}"
             #sudo -E bash ./config_db.sh &>> log.txt
             sudo -E bash ./config_db.sh
             /opt/aws/bin/cfn-signal --stack ${AWS::StackName} --region ${AWS::Region} "${ConfigDbWaitHandle}" -d "$SOLUTION_STACK"

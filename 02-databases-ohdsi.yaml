@@ -74,6 +74,8 @@ Mappings:
       Value: POC
     schedule:
       Value: LZ-ISCH-Schedules-WD0818CET
+    backupPlan:
+      Value: LS-ORP-DAILY-MONTHLY-BACKUP-1YR-RETENTION
 
 Conditions:
   DeployMultiAZDB: 
@@ -113,6 +115,8 @@ Resources:
           Value: !FindInMap [Tags,environment,Value]
         - Key: lz:schedule
           Value: !FindInMap [Tags,schedule,Value]
+        - Key: BackupPlan
+          Value: !FindInMap [Tags,backupPlan,Value]
 
   RDSDBInstance1:
     Type: AWS::RDS::DBInstance
@@ -138,6 +142,8 @@ Resources:
           Value: !FindInMap [Tags,environment,Value]
         - Key: lz:schedule
           Value: !FindInMap [Tags,schedule,Value]
+        - Key: BackupPlan
+          Value: !FindInMap [Tags,backupPlan,Value]
 
 # Only create the second instance if the user specified a Multi-AZ Database  
   RDSDBInstance2:
@@ -165,6 +171,8 @@ Resources:
           Value: !FindInMap [Tags,environment,Value]
         - Key: lz:schedule
           Value: !FindInMap [Tags,schedule,Value]
+        - Key: BackupPlan
+          Value: !FindInMap [Tags,backupPlan,Value]
 
   RDSDBClusterParameterGroup:
     Type: AWS::RDS::DBClusterParameterGroup
@@ -207,6 +215,18 @@ Resources:
         - !Ref SGData
       ClusterSubnetGroupName:
         Ref: RedshiftSubnetGroup
+      Tags:
+        - Key: lz:architectureId
+          Value: !FindInMap [Tags,architectureId,Value]
+        - Key: lz:architectureLayer
+          Value: !FindInMap [Tags,architectureLayer,Value]
+        - Key: lz:project
+          Value: !FindInMap [Tags,project,Value]
+        - Key: lz:environment
+          Value: !FindInMap [Tags,environment,Value]
+        - Key: BackupPlan
+          Value: !FindInMap [Tags,backupPlan,Value]
+
   RedshiftClusterMulti: 
     Condition: MultiNodeRedshift
     Type: "AWS::Redshift::Cluster"
@@ -226,6 +246,18 @@ Resources:
         - !Ref SGData
       ClusterSubnetGroupName:
         Ref: RedshiftSubnetGroup
+      Tags:
+        - Key: lz:architectureId
+          Value: !FindInMap [Tags,architectureId,Value]
+        - Key: lz:architectureLayer
+          Value: !FindInMap [Tags,architectureLayer,Value]
+        - Key: lz:project
+          Value: !FindInMap [Tags,project,Value]
+        - Key: lz:environment
+          Value: !FindInMap [Tags,environment,Value]
+        - Key: BackupPlan
+          Value: !FindInMap [Tags,backupPlan,Value]
+
   RedshiftSubnetGroup:
     Type: 'AWS::Redshift::ClusterSubnetGroup'
     Properties:
@@ -241,8 +273,6 @@ Resources:
         - 
           ParameterName: "require_ssl"
           ParameterValue: "true"
-
-
 
 Outputs:
   RDSEndpoint: 

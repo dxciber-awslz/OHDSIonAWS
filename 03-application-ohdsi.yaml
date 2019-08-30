@@ -409,10 +409,10 @@ Resources:
           ResourceName: SetupDesiredCapacity
           OptionName: MaxSize
           Value: !Ref WebAsgMax
-        - Namespace: aws:autoscaling:scheduledaction
-          ResourceName: SetupDesiredCapacity
-          OptionName: StartTime
-          Value: !GetAtt Now.Value
+#        - Namespace: aws:autoscaling:scheduledaction
+#          ResourceName: SetupDesiredCapacity
+#          OptionName: StartTime
+#          Value: !GetAtt Now.Value
         - Namespace: aws:autoscaling:scheduledaction
           ResourceName: Stop
           OptionName: MinSize,
@@ -430,7 +430,8 @@ Resources:
           OptionName: StartTime,
           Value: !If
             - ScheduledStop
-            - !GetAtt Now.Value
+#            - !GetAtt Now.Value
+            - !Ref AWS::NoValue
             - '2071-12-27T00:00:00Z'
         - Namespace: aws:autoscaling:scheduledaction
           ResourceName: Stop,
@@ -453,7 +454,8 @@ Resources:
           OptionName: StartTime
           Value: !If
             - ScheduledStart
-            - !GetAtt Now.Value
+#            - !GetAtt Now.Value
+            - !Ref AWS::NoValue
             - '2071-12-27T00:00:00Z'
         - Namespace: aws:autoscaling:scheduledaction
           ResourceName: Start
@@ -632,11 +634,14 @@ Resources:
         - Namespace: aws:autoscaling:scheduledaction
           ResourceName: Stop,
           OptionName: StartTime,
-          Value: !GetAtt Now.Value
+          Value: !If
+            - ScheduledStop
+            - !GetAtt Now.Value
+            - '2071-12-27T00:00:00Z'
         - Namespace: aws:autoscaling:scheduledaction
           ResourceName: Stop,
           OptionName: Recurrence
-          Value: "00 16 * * 1-5"
+          Value: !Ref StopCron
         - Namespace: aws:autoscaling:scheduledaction
           ResourceName: Start
           OptionName: MinSize
@@ -652,11 +657,14 @@ Resources:
         - Namespace: aws:autoscaling:scheduledaction
           ResourceName: Start
           OptionName: StartTime
-          Value: !GetAtt Now.Value
+          Value: !If
+            - ScheduledStart
+            - !GetAtt Now.Value
+            - '2071-12-27T00:00:00Z'
         - Namespace: aws:autoscaling:scheduledaction
           ResourceName: Start
           OptionName: Recurrence
-          Value: "00 06 * * 1-5"
+          Value: !Ref StartCron
         - Namespace: aws:autoscaling:launchconfiguration
           OptionName: EC2KeyName
           Value: !Ref 'EC2KeyName'

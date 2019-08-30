@@ -34,6 +34,7 @@ Metadata:
       Parameters:
         - EC2KeyName
         - AccessCidr
+        - SSHAccessCidr
     - Label:
           default: DNS and SSL
       Parameters:
@@ -122,6 +123,8 @@ Metadata:
         default: EC2 Key Pair
       AccessCidr:
         default: Limit access to IP address range?
+      SSHAccessCidr:
+        default: Limit SSH access to IP address range
 
       EBEndpoint:
         default: Elastic Beanstalk Endpoint Name
@@ -260,7 +263,12 @@ Parameters:
     Type: AWS::EC2::KeyPair::KeyName
   AccessCidr:
     AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
-    Description: 'The CIDR IP range that is permitted to access your OHDSI servers. Note: A value of 0.0.0.0/0 will allow access from ANY IP address.'
+    Description: 'The CIDR IP range that is permitted to access your OHDSI applications. Note: A value of 0.0.0.0/0 will allow access from ANY IP address.'
+    Type: String
+    Default: 0.0.0.0/0
+  SSHAccessCidr:
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
+    Description: 'The CIDR IP range that is permitted SSH access your OHDSI servers. Note: A value of 0.0.0.0/0 will allow access from ANY IP address.'
     Type: String
     Default: 0.0.0.0/0
 
@@ -659,6 +667,7 @@ Resources:
         SubnetDataA: !Ref SubnetDataA
         SubnetDataB: !Ref SubnetDataB
         AccessCidr: !Ref 'AccessCidr'
+        SSHAccessCidr: !Ref SSHAccessCidr
         UseACMBoolean: !Ref 'UseACMBoolean'
         UseRoute53Boolean: !Ref 'UseRoute53Boolean'
         SourcesBucket: !Ref SourcesBucket

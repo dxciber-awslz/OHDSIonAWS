@@ -46,7 +46,12 @@ Parameters:
     Description: Provide if CreateVpc is set to false
   AccessCidr:
     AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
-    Description: The CIDR IP range that is permitted to SSH to bastion instance. Note - a value of 0.0.0.0/0 will allow access from ANY IP address.
+    Description: The CIDR IP range that is permitted access to public endpoints. Note - a value of 0.0.0.0/0 will allow access from ANY IP address.
+    Type: String
+    Default: 0.0.0.0/0
+  SSHAccessCidr:
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
+    Description: The CIDR IP range that is permitted SSH to App instances. Note - a value of 0.0.0.0/0 will allow access from ANY IP address.
     Type: String
     Default: 0.0.0.0/0
   UseACMBoolean:
@@ -294,6 +299,10 @@ Resources:
           FromPort: '8787'
           ToPort: '8787'
           SourceSecurityGroupId: !Ref 'PublicSGSSL'   
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: !Ref SSHAccessCidr 
       Tags:
         - Key: Name
           Value: App Security Group

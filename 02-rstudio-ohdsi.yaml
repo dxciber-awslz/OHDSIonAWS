@@ -653,7 +653,30 @@ Resources:
       UnhealthyThresholdCount: 3
       VpcId: !Ref VPCId
 
+  ShinyServerTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    DependsOn: RStudioInstance
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 4
+      Matcher:
+        HttpCode: '200'
+      Port: 80
+      Protocol: HTTP
+      TargetGroupAttributes:
+      - Key: deregistration_delay.timeout_seconds
+        Value: '20'
+      Targets:
+      - Id: !Ref 'RStudioInstance'
+        Port: 3838
+      UnhealthyThresholdCount: 3
+      VpcId: !Ref VPCId
+
   
 Outputs:
   RStudioTargetGroupArn:
     Value: !Ref RStudioTargetGroup
+  ShinyServerTargetGroupArn:
+    Value: !Ref ShinyServerTargetGroup    

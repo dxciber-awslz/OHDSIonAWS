@@ -190,6 +190,8 @@ Parameters:
     Type: String
   RStudioTargetGroupArn:
     Type: String
+  ShinyServerTargetGroupArn:
+    Type: String
   RDSEndpoint: 
     Type: String
   RedshiftEndpoint: 
@@ -909,6 +911,7 @@ Resources:
                     echo "DATABASE_PASSWORD=" $DATABASE_PASSWORD
                     echo "RS_ROLE_ARN=" $RS_ROLE_ARN
                     echo "RSTUDIO_TARGET_GROUP_ARN=" $RSTUDIO_TARGET_GROUP_ARN
+                    echo "SHINY_TARGET_GROUP_ARN=" $SHINY_TARGET_GROUP_ARN
                     echo "SOURCES=" $SOURCES
                     echo "SOURCESBUCKET= " $SOURCESBUCKET
                     export AWS_DEFAULT_REGION=$(echo $EB_ENDPOINT | cut -d . -f2)
@@ -995,6 +998,7 @@ Resources:
                         export EB_LB_LISTENER=$(aws elbv2 describe-listeners --load-balancer-arn $EB_LB --query 'Listeners[0].ListenerArn' --output text)
 
                         aws elbv2 create-rule --listener-arn $EB_LB_LISTENER --priority 4 --conditions Field=host-header,Values='rstudio.*' --actions Type=forward,TargetGroupArn=$RSTUDIO_TARGET_GROUP_ARN
+                        aws elbv2 create-rule --listener-arn $EB_LB_LISTENER --priority 4 --conditions Field=host-header,Values='shiny-server.*' --actions Type=forward,TargetGroupArn=$SHINY_TARGET_GROUP_ARN
                     fi
 
 
@@ -1713,6 +1717,7 @@ Resources:
             export RS_ROLE_ARN=${RSRoleArn}
             export AWS_DEFAULT_REGION=$(echo $EB_ENDPOINT | cut -d . -f2)
             export RSTUDIO_TARGET_GROUP_ARN=${RstudioTGArn}
+            export SHINY_TARGET_GROUP_ARN=${ShinyTGArn}
             export CDM_VERSION=${OMOPv}
             export SOURCES=${Sources}
             export SOURCESBUCKET=${SourcesBucket}
@@ -1752,7 +1757,7 @@ Resources:
             #Shutdown and terminate this temporary instance 
             sleep 20
             shutdown -h now
-          - { RstudioTGArn: !Ref RStudioTargetGroupArn }
+          - { RstudioTGArn: !Ref RStudioTargetGroupArn, ShinyTGArn: !Ref ShinyServerTargetGroupArn }
   EC2WaitCondition:
     Type: "AWS::CloudFormation::WaitCondition"
     Condition: RunInitialization

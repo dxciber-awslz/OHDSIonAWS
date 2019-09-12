@@ -75,6 +75,21 @@ Though replacing the dependency of the Route53 template with the Application tem
 An additional WaitCondition was added so the bootstrapping script must signal the successful completion of the database preparation script to consider the CFN stack completed successfully. Originally, errors in the database preparation did not make the deployment fail.
 *NOTE: Additional success checks are planed to be introduced in the database preparation script*    
 
+
+### Remove secondary R installation and fix shiny-server
+
+The script first installs R using Yum and the repository packages, then performs a second "manual" installation under `/mnt/r-stuff/R-lastest` of the latest R version. The rest of the script does not use this second installation, so the installation of R packages that follows is done on the system level R installation (`/usr/lib64/R/library`).
+
+RStudio and shiny-server which are launched from init process, use the init process `PATH` that makes them use the System level R installation. So they wok as expected. However, the script also sets in `/etc/profile` the second R installation in the `PATH` environment variable. This is used by the worker processes spawned by shiny-server as this is done using `su --login`. As a result, the shiny-server applications look for packages in the secondary R installation where they are not found and fail. Even sample applications fail because the very basic `digest` package is not found.
+
+The whole secondary R installation and its inclusion in the PATH through `/etc/profile` has been removed.
+
+## Access to Shiny-Server in RStudio
+
+Shiny-Server is installed in RStudio instance, but it does not get exposed through the Load Balanced access. It has been added as an additional target group, configured in the load balancer rules, added to the SSL certificate secondary names, and its port included in the APP servers' security group.
+
+NOTE: This was done for general benefit and specifically to add PatientExploreR application to the installation.
+
 ## Temporary Instance Resource Deletion
 
 Having a temporary instance running the bootstrapping process is a handy mechanism, but leads to a drift between the stack definition and the existing resources that, such as described for tag management, leads in turn to operational problems.

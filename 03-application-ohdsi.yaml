@@ -925,27 +925,31 @@ Resources:
                     if [ -f /usr/lib64/R/etc/ldpaths.rpmnew ]; then
                       sudo cp /usr/lib64/R/etc/ldpaths.rpmnew /usr/lib64/R/etc/ldpaths
                     fi
+                    
+                    # This additional R installation does not work, as RStudio and 
+                    # Moreover, somehow this causes /mnt/r-stuff/R-latest/... to be inserted in the PATH from /etc/profile
+                    # The shiny user, takes that as R_HOME and shiny-server applications fail because they do not find libraries
+                    # which are correctly installed but in /usr/lib64/R/library as corresponds
+                    # mkdir /mnt/r-stuff
+                    # cd /mnt/r-stuff
 
-                    mkdir /mnt/r-stuff
-                    cd /mnt/r-stuff
-
-                    pushd .
-                    mkdir R-latest
-                    cd R-latest
-                    wget https://cran.r-project.org/src/base/R-3/R-3.5.3.tar.gz
-                    tar -xzf R-3.5.3.tar.gz
+                    # pushd .
+                    # mkdir R-latest
+                    # cd R-latest
+                    # wget https://cran.r-project.org/src/base/R-3/R-3.5.3.tar.gz
+                    # tar -xzf R-3.5.3.tar.gz
                     #Trying out Python
                     sudo yum install -y python36 python36-devel python36-pip
                     sudo yum install -y gcc gcc-c++ gcc-gfortran
                     sudo yum install -y readline-devel cairo-devel libpng-devel libjpeg-devel libtiff-devel postgresql-devel
-                    cd R-3*
-                    ./configure --with-readline=yes --enable-R-profiling=no --enable-memory-profiling=no --enable-R-shlib --with-pic --prefix=/usr --with-x --with-libpng --with-jpeglib --with-cairo --enable-R-shlib --with-recommended-packages=yes
-                    make -j 8
-                    sudo make install
-                    sudo su << BASH_SCRIPT
-                    echo 'export PATH=${!PWD}/bin:$PATH' >> /etc/profile
-                    BASH_SCRIPT
-                    popd
+                    # cd R-3*
+                    # ./configure --with-readline=yes --enable-R-profiling=no --enable-memory-profiling=no --enable-R-shlib --with-pic --prefix=/usr --with-x --with-libpng --with-jpeglib --with-cairo --enable-R-shlib --with-recommended-packages=yes
+                    # make -j 8
+                    # sudo make install
+                    # sudo su << BASH_SCRIPT
+                    # echo 'export PATH=${!PWD}/bin:$PATH' >> /etc/profile
+                    # BASH_SCRIPT
+                    # popd
 
                     sudo sed -i 's/make/make -j 8/g' /usr/lib64/R/etc/Renviron
 
@@ -958,6 +962,7 @@ Resources:
                     # fix java binding - R and packages have to be compiled with the same java version as hadoop
                     sudo R CMD javareconf
                     
+                    # This is using the Yum R installation and ignoring the one in /mnt/r-stuff...
                     #Grab R binaries   
                     cd /usr/lib64/R/library
                     wget https://ohdsi-sample-data.s3.amazonaws.com/rdependencies.tar.gz
@@ -965,6 +970,7 @@ Resources:
                     cd /tmp
 
                     #Install R dependencies if any of the specified versions differ
+                    # This will use the Yum R installation, as the one in /mnt/r-stuff is not in the PATH of this shell session
                     sudo Rscript /tmp/rdependencies.r
 
                     # DXC Technology: If use of a Route53 custom domain was selected this loop fails, as the DNS records have not been

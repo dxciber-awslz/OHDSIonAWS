@@ -300,6 +300,10 @@ Resources:
           ToPort: '8787'
           SourceSecurityGroupId: !Ref 'PublicSGSSL'   
         - IpProtocol: tcp
+          FromPort: '3838'
+          ToPort: '3838'
+          SourceSecurityGroupId: !Ref 'PublicSGSSL'   
+        - IpProtocol: tcp
           FromPort: '22'
           ToPort: '22'
           CidrIp: !Ref SSHAccessCidr 
@@ -320,6 +324,10 @@ Resources:
         - IpProtocol: tcp
           FromPort: '8787'
           ToPort: '8787'
+          SourceSecurityGroupId: !Ref 'PublicSGNoSSL'   
+        - IpProtocol: tcp
+          FromPort: '3838'
+          ToPort: '3838'
           SourceSecurityGroupId: !Ref 'PublicSGNoSSL'   
       Tags:
         - Key: Name

@@ -273,7 +273,19 @@ Resources:
         - 
           ParameterName: "require_ssl"
           ParameterValue: "true"
+  RedShiftEndpointParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Type: String
+      Name: /OHDSI/POC/RedShift/endpoint
+      Value: !If [ MultiNodeRedshift, !GetAtt RedshiftClusterMulti.Endpoint.Address, !GetAtt RedshiftClusterSingle.Endpoint.Address ]
 
+  RDSEndpointParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Type: String
+      Name: /OHDSI/POC/RDS/endpoint
+      Value: !GetAtt RDSCluster.Endpoint.Address
 Outputs:
   RDSEndpoint: 
     Value: !GetAtt RDSCluster.Endpoint.Address 

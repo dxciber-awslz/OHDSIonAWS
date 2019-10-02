@@ -1693,6 +1693,9 @@ Resources:
                         content: |
                           #Change Apache session timeout values for Atlas long running queries
                           sudo sed -i -e '/Timeout / s/ .*/ 240/' /etc/httpd/conf/httpd.conf
+                          #Change tomcat connectionTimeout
+                          sed -i -re 's/(connectionTimeout=\").+\"/\1240000\"/g' /etc/tomcat8/server.xml
+                          service tomcat8 restart
                 mode: 000500
                 owner: root
                 group: root

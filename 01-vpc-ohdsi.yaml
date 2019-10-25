@@ -346,6 +346,15 @@ Resources:
       Tags:
         - Key: Name
           Value: DB Security Group
+  DataSGSelfReferenceRule:
+    Condition: DeployACM
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DataSGSSL
+      IpProtocol: TCP
+      FromPort: 0
+      ToPort: 65535
+      SourceSecurityGroupId: !Ref DataSGSSL
   DataSGNoSSL:
     Condition: NoDeployACM
     Type: AWS::EC2::SecurityGroup
@@ -360,6 +369,15 @@ Resources:
       Tags:
         - Key: Name
           Value: DB Security Group
+  DataSGNoSSLSelfReferenceRule:
+    Condition: DeployACM
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DataSGNoSSL
+      IpProtocol: TCP
+      FromPort: 0
+      ToPort: 65535
+      SourceSecurityGroupId: !Ref DataSGNoSSL
 
 
   

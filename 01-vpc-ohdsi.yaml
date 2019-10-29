@@ -350,11 +350,11 @@ Resources:
     Condition: DeployACM
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
-      GroupId: !Ref DataSGSSL
-      IpProtocol: TCP
-      FromPort: 0
-      ToPort: 65535
-      SourceSecurityGroupId: !Ref DataSGSSL
+      GroupId: !Ref 'DataSGSSL'
+      IpProtocol: tcp
+      FromPort: '0'
+      ToPort: '65535'
+      SourceSecurityGroupId: !Ref 'DataSGSSL'
   DataSGNoSSL:
     Condition: NoDeployACM
     Type: AWS::EC2::SecurityGroup
@@ -370,14 +370,14 @@ Resources:
         - Key: Name
           Value: DB Security Group
   DataSGNoSSLSelfReferenceRule:
-    Condition: DeployACM
+    Condition: NoDeployACM
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
-      GroupId: !Ref DataSGNoSSL
-      IpProtocol: TCP
-      FromPort: 0
-      ToPort: 65535
-      SourceSecurityGroupId: !Ref DataSGNoSSL
+      GroupId: !Ref 'DataSGNoSSL'
+      IpProtocol: tcp
+      FromPort: '0'
+      ToPort: '65535'
+      SourceSecurityGroupId: !Ref 'DataSGNoSSL'
 
 
   

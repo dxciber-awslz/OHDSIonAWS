@@ -417,7 +417,7 @@ Resources:
 #          Value: !GetAtt Now.Value
         - Namespace: aws:autoscaling:scheduledaction
           ResourceName: Stop
-          OptionName: MinSize,
+          OptionName: MinSize
           Value: 0
         - Namespace: aws:autoscaling:scheduledaction
           ResourceName: Stop
@@ -428,15 +428,15 @@ Resources:
           OptionName: DesiredCapacity
           Value: 0
         - Namespace: aws:autoscaling:scheduledaction
-          ResourceName: Stop,
-          OptionName: StartTime,
+          ResourceName: Stop
+          OptionName: StartTime
           Value: !If
             - ScheduledStop
 #            - !GetAtt Now.Value
             - !Ref AWS::NoValue
             - '2071-12-27T00:00:00Z'
         - Namespace: aws:autoscaling:scheduledaction
-          ResourceName: Stop,
+          ResourceName: Stop
           OptionName: Recurrence
           Value: !Ref StopCron
         - Namespace: aws:autoscaling:scheduledaction

@@ -183,6 +183,8 @@ Parameters:
     Type: String
   RStudioTargetGroupArn:
     Type: String
+  ShinyServerTargetGroupArn:
+    Type: String
   RDSEndpoint: 
     Type: String
   RedshiftEndpoint: 
@@ -191,6 +193,11 @@ Parameters:
     Type: String
     Description: 'S3 Bucket used to store the application package for Elastic Beanstalk.'
   RSRoleArn:
+    Type: String
+
+  StopCron:
+    Type: String
+  StartCron:
     Type: String
 
 
@@ -305,6 +312,10 @@ Conditions:
   NotDeployACM: !Or
     - !Equals [ false, !Ref UseACMBoolean ]
     - !Equals [ false, !Ref UseRoute53Boolean ]
+  ScheduledStop: !Not
+    - !Equals [ NEVER, !Ref StopCron ]
+  ScheduledStart: !Not
+    - !Equals [ NEVER, !Ref StartCron ]
 
 
 Resources:
@@ -374,6 +385,60 @@ Resources:
           ResourceName: SetupDesiredCapacity
           OptionName: StartTime
           Value: !GetAtt Now.Value
+        - Namespace: aws:autoscaling:scheduledaction
+          ResourceName: Stop
+          OptionName: MinSize
+          Value: 0
+        - Namespace: aws:autoscaling:scheduledaction
+          ResourceName: Stop
+          OptionName: MaxSize
+          Value: 0
+        - Namespace: aws:autoscaling:scheduledaction
+          ResourceName: Stop
+          OptionName: DesiredCapacity
+          Value: 0
+        - Namespace: aws:autoscaling:scheduledaction
+          ResourceName: Stop
+          OptionName: StartTime
+          Value: !If
+            - ScheduledStop
+#            - !GetAtt Now.Value
+            - '2071-12-27T01:00:00Z'
+            - !Ref AWS::NoValue
+        - Namespace: aws:autoscaling:scheduledaction
+          ResourceName: Stop
+          OptionName: Recurrence
+          Value: !If
+            - ScheduledStop
+            - !Ref StopCron
+            - '0 1 31 2 *'
+        - Namespace: aws:autoscaling:scheduledaction
+          ResourceName: Start
+          OptionName: MinSize
+          Value: !Ref WebAsgMin
+        - Namespace: aws:autoscaling:scheduledaction
+          ResourceName: Start
+          OptionName: MaxSize
+          Value: !Ref WebAsgMax
+        - Namespace: aws:autoscaling:scheduledaction
+          ResourceName: Start
+          OptionName: DesiredCapacity
+          Value: !Ref WebAsgDesired
+        - Namespace: aws:autoscaling:scheduledaction
+          ResourceName: Start
+          OptionName: StartTime
+          Value: !If
+            - ScheduledStart
+#            - !GetAtt Now.Value
+            - '2071-12-27T00:00:00Z'
+            - !Ref AWS::NoValue
+        - Namespace: aws:autoscaling:scheduledaction
+          ResourceName: Start
+          OptionName: Recurrence
+          Value: !If
+            - ScheduledStart
+            - !Ref StartCron
+            - '0 0 31 2 *'
         - Namespace: aws:autoscaling:launchconfiguration
           OptionName: EC2KeyName
           Value: !Ref 'EC2KeyName'

@@ -678,7 +678,7 @@ Resources:
       Parameters:
         R53HostedZoneId: !Ref 'HostedZoneId'
         R53DomainName: !Join ['', [!Ref DomainName, '.', !Ref HostedZoneName]]
-        SubjectAlternativeNames: !Join [' ', [!Join ['', ['rstudio.', !Ref DomainName, '.', !Ref HostedZoneName]],!Join ['', ['shiny-server.', !Ref DomainName, '.', !Ref HostedZoneName]]]]
+        SubjectAlternativeNames: !Join [',', [!Join ['', ['rstudio.', !Ref DomainName, '.', !Ref HostedZoneName]]]]
       TemplateURL: !Join 
         - "/"
         - - "https://s3.amazonaws.com"
@@ -829,7 +829,7 @@ Resources:
           !GetAtt 'VPCStack.Outputs.TempEC2InstanceProfile'
         RStudioTargetGroupArn:
           !GetAtt 'RStudioStack.Outputs.RStudioTargetGroupArn'
-        ShniServerTargetGroupArn:
+        ShinyServerTargetGroupArn:
           !GetAtt 'RStudioStack.Outputs.ShinyServerTargetGroupArn'
         RDSEndpoint: 
           !GetAtt 'DatabasesStack.Outputs.RDSEndpoint'

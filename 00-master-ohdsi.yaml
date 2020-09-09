@@ -686,6 +686,21 @@ Resources:
           - !Ref S3TemplatesPrefix
           - 01-certificate-ohdsi.yaml
 
+  certificate20200909:
+    Condition: DeployACM
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        R53HostedZoneId: !Ref 'HostedZoneId'
+        R53DomainName: !Join ['', [!Ref DomainName, '.', !Ref HostedZoneName]]
+        SubjectAlternativeNames: !Join [',', [!Join ['', ['rstudio.', !Ref DomainName, '.', !Ref HostedZoneName]]]]
+      TemplateURL: !Join 
+        - "/"
+        - - "https://s3.amazonaws.com"
+          - !Ref S3TemplatesBucket
+          - !Ref S3TemplatesPrefix
+          - 01-certificate-ohdsi.yaml
+
   DatabasesStack:
     Type: AWS::CloudFormation::Stack
     DependsOn: VPCStack

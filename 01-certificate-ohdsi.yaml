@@ -175,13 +175,14 @@ Resources:
 
                       logger.info(str(args))
                       resp = acm.request_certificate(**args)
-                      logger.info(str(resp))
+                      print(str(resp))
                       resource_id = resp['CertificateArn']
                       responseData['CertificateArn'] = resource_id
+                      print('Resource Id:'+resource_id)
                       logger.info('Certificate requested: {}'.format(resource_id))
 
-                      change_records(resource_id, props['HostedZoneId'], 'UPSERT')
-                      wait_for_issuance(resource_id)
+                      change_records(resp['CertificateArn'], props['HostedZoneId'], 'UPSERT')
+                      wait_for_issuance(resp['CertificateArn'])
 
               except Exception as e:
                   logger.exception(e)

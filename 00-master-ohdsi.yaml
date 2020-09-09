@@ -106,11 +106,6 @@ Metadata:
         - a2cidr
         - d1cidr
         - d2cidr
-    - Lagel:
-        default: ASG Stop and Start schedule
-      Parameters:
-        - StopCron
-        - StartCron
     
     ParameterLabels:
       S3TemplatesBucket:
@@ -238,10 +233,6 @@ Metadata:
       d2cidr:
         default: Database Subnet B CIDR Range
 
-      StopCron:
-        default: Cron expression when the ASG Min, Max and Desired settings will be set to zero
-      StartCron:
-        default: Cron expression when the AWG Min, Max and Desired settings will be restored
 
 Parameters:
   S3TemplatesBucket:
@@ -260,9 +251,10 @@ Parameters:
     Type: AWS::EC2::KeyPair::KeyName
   AccessCidr:
     AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
-    Description: 'The CIDR IP range that is permitted to access your OHDSI applications. Note: A value of 0.0.0.0/0 will allow access from ANY IP address.'
+    Description: 'The CIDR IP range that is permitted to access your OHDSI servers. Note: A value of 0.0.0.0/0 will allow access from ANY IP address.'
     Type: String
     Default: 0.0.0.0/0
+
 
   EBEndpoint:
     AllowedPattern: ^([a-zA-Z0-9-])*$
@@ -616,18 +608,6 @@ Parameters:
     Type: String
     Default: 10.1.5.0/24
 
-
-  StopCron:
-    Description: 'Cron expression when the ASG Min, Max and Desired values will be set to zero. NEVER to Disable. Format (crontab.org) [Minute] [Hour] [Day_of_Month] [Month_of_Year] [Day_of_Week]'
-    AllowedPattern: (^NEVER$|^((([0-9]|([0-5][0-9]))|\*) (([0-9]|(1[0-9])|(2[0-3]))|\*) (([0-9]|(2[0-9])|(3[0-1]))|\*) (([0-9]|(1[0-2]))|\*) ([0-7]|\*))$)
-    Type: String
-    Default: NEVER
-  StartCron:
-    Description: 'Cron expression when the ASG Min, Max and Desired values will be reset. NEVER to Disable. Format (crontab.org) [Minute] [Hour] [Day_of_Month] [Month_of_Year] [Day_of_Week]'
-    AllowedPattern: (^NEVER$|^((([0-9]|([0-5][0-9]))|\*) (([0-9]|(1[0-9])|(2[0-3]))|\*) (([0-9]|(2[0-9])|(3[0-1]))|\*) (([0-9]|(1[0-2]))|\*) ([0-7]|\*))$)
-    Type: String
-    Default: NEVER
-      
 Conditions:
   DeployRoute53: 
     !Equals [ true, !Ref UseRoute53Boolean ]
@@ -658,7 +638,6 @@ Resources:
         SubnetDataA: !Ref SubnetDataA
         SubnetDataB: !Ref SubnetDataB
         AccessCidr: !Ref 'AccessCidr'
-        SSHAccessCidr: !Ref VPCcidr
         UseACMBoolean: !Ref 'UseACMBoolean'
         UseRoute53Boolean: !Ref 'UseRoute53Boolean'
         SourcesBucket: !Ref SourcesBucket
@@ -671,21 +650,6 @@ Resources:
         d1cidr: !Ref d1cidr
         d2cidr: !Ref d2cidr
 
-  certificate:
-    Condition: DeployACM
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      Parameters:
-        R53HostedZoneId: !Ref 'HostedZoneId'
-        R53DomainName: !Join ['', [!Ref DomainName, '.', !Ref HostedZoneName]]
-        SubjectAlternativeNames: !Join [',', [!Join ['', ['rstudio.', !Ref DomainName, '.', !Ref HostedZoneName]]]]
-      TemplateURL: !Join 
-        - "/"
-        - - "https://s3.amazonaws.com"
-          - !Ref S3TemplatesBucket
-          - !Ref S3TemplatesPrefix
-          - 01-certificate-ohdsi.yaml
-
   certificate20200909:
     Condition: DeployACM
     Type: AWS::CloudFormation::Stack
@@ -693,7 +657,7 @@ Resources:
       Parameters:
         R53HostedZoneId: !Ref 'HostedZoneId'
         R53DomainName: !Join ['', [!Ref DomainName, '.', !Ref HostedZoneName]]
-        SubjectAlternativeNames: !Join [',', [!Join ['', ['rstudio.', !Ref DomainName, '.', !Ref HostedZoneName]]]]
+        SubjectAlternativeNames: !Join ['', ['rstudio.', !Ref DomainName, '.', !Ref HostedZoneName]]
       TemplateURL: !Join 
         - "/"
         - - "https://s3.amazonaws.com"
@@ -785,7 +749,7 @@ Resources:
         SourcesBucket:
           !Ref SourcesBucket
         SslCertificate:
-          !If [ DeployACM, !GetAtt [ certificate, Outputs.CertificateArn ], '' ]
+          !If [ DeployACM, !GetAtt [ certificate20200909, Outputs.CertificateArn ], '' ]
         WebAsgMax:
           !Ref WebAsgMax
         WebAsgMin:
@@ -844,8 +808,6 @@ Resources:
           !GetAtt 'VPCStack.Outputs.TempEC2InstanceProfile'
         RStudioTargetGroupArn:
           !GetAtt 'RStudioStack.Outputs.RStudioTargetGroupArn'
-        ShinyServerTargetGroupArn:
-          !GetAtt 'RStudioStack.Outputs.ShinyServerTargetGroupArn'
         RDSEndpoint: 
           !GetAtt 'DatabasesStack.Outputs.RDSEndpoint'
         RedshiftEndpoint: 
@@ -855,8 +817,6 @@ Resources:
         PrivateDeployment: 'false'
         AtlasSecurity: !Ref AtlasSecurity
         UserList: !Ref 'RStudioUserList'
-        StartCron: !Ref StartCron
-        StopCron: !Ref StopCron
       TemplateURL: !Join 
         - "/"
         - - "https://s3.amazonaws.com"

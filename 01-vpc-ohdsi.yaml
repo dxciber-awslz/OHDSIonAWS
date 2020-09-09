@@ -762,6 +762,8 @@ Outputs:
     Value: !If [ DeployACM, !Ref 'PublicSGSSL', !Ref 'PublicSGNoSSL' ]
   SGApp:
     Value: !If [ DeployACM, !Ref 'AppSGSSL', !Ref 'AppSGNoSSL' ]
+    Export:
+      Name: OHDSI-POC-SGApp
   SGData:
     Value: !If [ DeployACM, !Ref 'DataSGSSL', !Ref 'DataSGNoSSL' ]
   EBServiceRole:
